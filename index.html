@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Gestión de Streaming</title>
+<link rel="icon" type="image/png" href="https://raw.githubusercontent.com/cdelgadoffs/CGD/37dfce32a3b2aa5775fc4723b6bd94bf1e14fd45/cdelgado.PNG" />
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: #fff; color: #1a1a1a; font-size: 14px; line-height: 1.6; }
+.shell { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+/* TOPBAR */
+.topbar {
+  height: 52px; min-height: 52px; background: #111; color: #fff;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 18px; flex-shrink: 0; border-bottom: 1px solid #000;
+}
+.topbar .logo-slot { display: flex; align-items: center; height: 32px; }
+.topbar .logo-slot img { max-height: 32px; display: block; }
+.topbar .logo-slot .logo-placeholder { font-size: 12px; color: #777; font-family: 'DM Mono', monospace; letter-spacing: .05em; }
+.topbar .datetime { text-align: right; font-family: 'DM Mono', monospace; }
+.topbar .datetime .fecha { font-size: 12px; color: #ccc; text-transform: capitalize; }
+.topbar .datetime .hora { font-size: 11px; color: #888; margin-top: 1px; }
+
+.body-shell { display: flex; flex: 1; overflow: hidden; }
+
+.topbar .search-slot { flex: 1; display: flex; justify-content: center; padding: 0 20px; }
+.topbar .search-input { width: 100%; max-width: 360px; padding: 7px 12px; border-radius: 6px; border: 1px solid #333; background: #1c1c1c; color: #fff; font-size: 13px; font-family: inherit; }
+.topbar .search-input::placeholder { color: #888; }
+.topbar .search-input:focus { outline: none; border-color: #1a56db; background: #222; }
+
+.search-backdrop { position: fixed; top: 52px; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.15); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); z-index: 400; display: none; }
+.search-backdrop.active { display: block; }
+.search-results {
+  position: fixed; top: 52px; left: 0; bottom: 0; width: 80%; min-width: 320px;
+  background: #eef0f2; border-right: 1px solid #d5d8db;
+  box-shadow: 6px 0 24px rgba(0,0,0,.18); z-index: 401; overflow-y: auto; display: none;
+}
+.search-results.active { display: block; }
+.sr-topbar { position: sticky; top: 0; background: #e4e7ea; border-bottom: 1px solid #d0d3d6; padding: 14px 24px; display: flex; justify-content: space-between; align-items: center; z-index: 2; }
+.sr-topbar .sr-count { font-size: 12px; color: #777; }
+.sr-close { background: none; border: none; font-size: 18px; color: #777; cursor: pointer; }
+.sr-close:hover { color: #1a1a1a; }
+.sr-group { padding: 16px 24px 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: #888; font-weight: 700; }
+.sr-card { margin: 0 24px 18px; border: 1px solid #d9dbde; background: #fbfbfc; padding: 16px 18px; border-radius: 4px; }
+.sr-card .sr-card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 10px; }
+.sr-card .sr-card-title { font-size: 15px; font-weight: 700; }
+.sr-card .sr-mini-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 12px; }
+.sr-card .sr-field label { display: block; font-size: 10.5px; font-weight: 600; color: #888; margin-bottom: 3px; text-transform: uppercase; letter-spacing: .02em; }
+.sr-card .sr-field input, .sr-card .sr-field select { width: 100%; padding: 6px 8px; border: 1px solid #ddd; font-size: 12.5px; font-family: inherit; background: #fff; }
+.sr-stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 12px; }
+.sr-stat { background: #f1f2f4; border: 1px solid #dfe1e3; padding: 10px 12px; }
+.sr-stat .n { font-size: 17px; font-weight: 700; color: #1a1a1a; }
+.sr-stat .l { font-size: 10px; color: #888; font-weight: 600; text-transform: uppercase; letter-spacing: .02em; margin-top: 2px; }
+.sr-stat.good { background: #eaf7ee; border-color: #cdebd6; }
+.sr-stat.good .n { color: #157347; }
+.sr-stat.warn { background: #fdf3e3; border-color: #f2ddb2; }
+.sr-stat.warn .n { color: #b45309; }
+.sr-stat.danger { background: #fbe9e9; border-color: #f0c4c4; }
+.sr-stat.danger .n { color: #b91c1c; }
+.sr-subhead { font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: #888; font-weight: 700; margin-top: 14px; margin-bottom: 4px; }
+.sr-card table { width: 100%; border-collapse: collapse; margin-top: 8px; background: #fff; }
+.sr-card table th { text-align: left; font-size: 10px; text-transform: uppercase; color: #999; padding: 6px 8px; border-bottom: 1px solid #eee; }
+.sr-card table td { padding: 6px 8px; font-size: 12px; border-bottom: 1px solid #f2f2f2; }
+.sr-card table td input, .sr-card table td select { padding: 4px 6px; font-size: 11.5px; border: 1px solid #ddd; width: 100%; font-family: inherit; }
+.sr-empty { padding: 30px 24px; color: #999; font-size: 13px; text-align: center; }
+@media (max-width: 720px) {
+  .search-results { width: 100%; }
+  .topbar .search-slot { display: none; }
+  .sr-card .sr-mini-grid { grid-template-columns: 1fr; }
+}
+
+/* SIDEBAR */
+.sidebar { width: 220px; min-width: 220px; border-right: 1px solid #e0e0e0; background: #f7f7f7; display: flex; flex-direction: column; flex-shrink: 0; }
+.sb-header { padding: 18px 16px; border-bottom: 1px solid #e0e0e0; }
+.sb-badge { font-family: 'DM Mono', monospace; font-size: 10px; color: #999; letter-spacing: .08em; text-transform: uppercase; }
+.sb-title { font-size: 16px; font-weight: 700; margin-top: 2px; }
+.sb-nav { padding: 8px 0; flex: 1; overflow-y: auto; }
+.nav-item { display: flex; align-items: center; gap: 8px; padding: 10px 16px; cursor: pointer; border-left: 3px solid transparent; font-size: 13px; color: #555; transition: all .15s; font-weight: 500; }
+.nav-item:hover { background: #ececec; color: #1a1a1a; }
+.nav-item.active { border-left-color: #1a56db; background: #e8eefc; color: #1a56db; }
+.nav-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: .5; flex-shrink: 0; }
+.nav-item.active .nav-dot { opacity: 1; }
+.sb-footer { padding: 12px 16px; border-top: 1px solid #e0e0e0; font-size: 11px; color: #999; }
+.sb-footer button { width: 100%; margin-top: 8px; background: none; border: 1px solid #ddd; border-radius: 4px; padding: 6px; font-size: 11px; color: #666; cursor: pointer; }
+.sb-footer button:hover { background: #eee; }
+
+/* SIDEBAR SECUNDARIO (listas de servicios/usuarios) */
+.sidebar-secundario { width: 240px; min-width: 240px; border-right: 1px solid #e8e8e8; background: #fafafa; display: flex; flex-direction: column; flex-shrink: 0; }
+.sidebar-secundario.hidden { display: none; }
+.ss-header { padding: 14px 16px; border-bottom: 1px solid #e8e8e8; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ss-header .ss-title { font-size: 13px; font-weight: 700; }
+.ss-header .ss-count { font-size: 11px; color: #999; margin-top: 2px; }
+.ss-add { background: #1a1a1a; color: #fff; border: none; width: 26px; height: 26px; border-radius: 5px; font-size: 16px; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+.ss-add:hover { background: #333; }
+.ss-list { flex: 1; overflow-y: auto; padding: 6px 0; }
+.ss-item { padding: 10px 16px; cursor: pointer; border-left: 3px solid transparent; transition: all .15s; }
+.ss-item:hover { background: #eee; }
+.ss-item.active { border-left-color: #1a56db; background: #e8eefc; }
+.ss-item .ss-item-title { font-size: 13px; font-weight: 600; color: #1a1a1a; }
+.ss-item .ss-item-sub { font-size: 11px; color: #888; margin-top: 2px; }
+.ss-empty { padding: 24px 16px; color: #999; font-size: 12px; text-align: center; }
+
+/* MAIN */
+.main { flex: 1; overflow-y: auto; padding: 28px 36px; background: #fff; }
+.page-header { margin-bottom: 22px; padding-bottom: 16px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 12px; }
+.page-title { font-size: 20px; font-weight: 700; }
+.page-sub { font-size: 12.5px; color: #888; margin-top: 3px; }
+
+/* BUTTONS */
+.btn { border: none; border-radius: 5px; font-size: 13px; font-weight: 500; cursor: pointer; padding: 8px 16px; transition: background .15s; font-family: inherit; }
+.btn-primary { background: #1a1a1a; color: #fff; }
+.btn-primary:hover { background: #333; }
+.btn-outline { background: none; border: 1px solid #ccc; color: #444; }
+.btn-outline:hover { background: #f0f0f0; }
+.btn-danger { background: none; border: 1px solid #f0b4b4; color: #b91c1c; }
+.btn-danger:hover { background: #fee2e2; }
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+
+/* CARDS / GRID */
+.grid-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; margin-bottom: 24px; }
+.stat-card { background: #fafafa; border: 1px solid #e8e8e8; border-radius: 8px; padding: 16px; }
+.stat-card .n { font-size: 24px; font-weight: 700; }
+.stat-card .l { font-size: 11px; color: #888; font-weight: 500; margin-top: 2px; text-transform: uppercase; letter-spacing: .03em; }
+.stat-card.warn { border-color: #f5c98f; background: #fff8ef; }
+.stat-card.warn .n { color: #b45309; }
+.stat-card.danger { border-color: #f0b4b4; background: #fef5f5; }
+.stat-card.danger .n { color: #b91c1c; }
+.stat-card.good { border-color: #b7e0c4; background: #f2fbf5; }
+.stat-card.good .n { color: #157347; }
+
+/* TABLE */
+table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #eee; border-radius: 8px; overflow: hidden; }
+thead th { background: #fafafa; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: #888; font-weight: 600; padding: 10px 12px; border-bottom: 1px solid #eee; }
+tbody td { padding: 10px 12px; border-bottom: 1px solid #f2f2f2; font-size: 13px; vertical-align: middle; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: #fafafa; }
+.tbl-actions { display: flex; gap: 6px; }
+.empty-row td { text-align: center; color: #999; padding: 30px; }
+
+.badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 500; }
+.badge-ok { background: #e2f6e8; color: #157347; }
+.badge-warn { background: #fdf0dc; color: #b45309; }
+.badge-danger { background: #fde3e3; color: #b91c1c; }
+.badge-neutral { background: #eee; color: #666; }
+
+/* FORM */
+.form-row { margin-bottom: 14px; }
+.form-row label { display: block; font-size: 12.5px; font-weight: 600; margin-bottom: 5px; color: #333; }
+.form-row .hint { font-size: 11px; color: #999; margin-top: 3px; }
+input[type=text], input[type=number], input[type=tel], input[type=password], select, textarea {
+  width: 100%; padding: 8px 10px; border: 1px solid #ddd; border-radius: 5px; font-size: 13px; font-family: inherit; background: #fff;
+}
+input:focus, select:focus, textarea:focus { outline: none; border-color: #1a56db; }
+.form-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.chip-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.chip { display: flex; align-items: center; gap: 6px; background: #eef2ff; color: #1a56db; border-radius: 14px; padding: 4px 10px; font-size: 12px; }
+.chip button { background: none; border: none; color: #1a56db; cursor: pointer; font-weight: 700; font-size: 13px; line-height: 1; }
+
+/* MODAL */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+.modal-overlay.active { display: flex; }
+.modal-content { background: #fff; border-radius: 10px; padding: 22px 26px; max-width: 520px; width: 100%; max-height: 88vh; overflow-y: auto; box-shadow: 0 20px 40px rgba(0,0,0,.2); }
+.modal-content h3 { font-size: 17px; font-weight: 700; margin-bottom: 16px; }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 18px; }
+
+.svc-assign-block { border: 1px solid #e8e8e8; border-radius: 6px; padding: 12px; margin-bottom: 10px; background: #fafafa; }
+.svc-assign-block .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.svc-assign-block .top strong { font-size: 13px; }
+.svc-assign-block .remove-btn { background: none; border: none; color: #b91c1c; cursor: pointer; font-size: 12px; }
+.placeholder-msg { padding: 50px 20px; text-align: center; color: #999; }
+.toast { position: fixed; bottom: 20px; right: 20px; background: #1a1a1a; color: #fff; padding: 10px 18px; border-radius: 6px; font-size: 13px; z-index: 2000; opacity: 0; transform: translateY(10px); transition: all .2s; pointer-events: none; }
+.toast.show { opacity: 1; transform: translateY(0); }
+
+@media (max-width: 720px) {
+  .body-shell { flex-direction: column; height: auto; overflow: visible; }
+  .sidebar { width: 100%; min-width: unset; flex-direction: row; overflow-x: auto; }
+  .sb-header, .sb-footer { display: none; }
+  .sb-nav { display: flex; padding: 6px; }
+  .nav-item { border-left: none; border-bottom: 3px solid transparent; white-space: nowrap; }
+  .nav-item.active { border-left: none; border-bottom-color: #1a56db; }
+  .sidebar-secundario { width: 100%; min-width: unset; max-height: 220px; }
+  .main { padding: 16px; height: auto; overflow: visible; }
+  .form-grid2 { grid-template-columns: 1fr; }
+  .topbar .fecha { font-size: 11px; }
+}
+</style>
+</head>
+<body>
+<div class="shell">
+  <div class="topbar">
+    <div class="logo-slot" id="logoSlot"><img src="https://raw.githubusercontent.com/cdelgadoffs/CGD/37dfce32a3b2aa5775fc4723b6bd94bf1e14fd45/cdelgado.PNG" alt="Logo" /></div>
+    <div class="search-slot">
+      <input type="text" class="search-input" id="buscadorGlobal" placeholder="Buscar servicio o usuario..." autocomplete="off" />
+    </div>
+    <div class="datetime">
+      <div class="fecha" id="topFecha">-</div>
+      <div class="hora" id="topHora">-</div>
+    </div>
+  </div>
+
+  <div class="search-backdrop" id="searchBackdrop"></div>
+  <div class="search-results" id="searchResults"></div>
+
+  <div class="body-shell">
+    <aside class="sidebar">
+      <div class="sb-header">
+        <div class="sb-badge">Negocio</div>
+        <div class="sb-title">Streaming Manager</div>
+      </div>
+      <nav class="sb-nav" id="navMain">
+        <div class="nav-item active" data-vista="dashboard"><span class="nav-dot"></span> Panel administrativo</div>
+        <div class="nav-item" data-vista="servicios"><span class="nav-dot"></span> Servicios</div>
+        <div class="nav-item" data-vista="usuarios"><span class="nav-dot"></span> Usuarios</div>
+        <div class="nav-item" data-vista="pagos"><span class="nav-dot"></span> Pagos y adeudos</div>
+      </nav>
+      <div class="sb-footer">
+        Almacenamiento: <span id="storageMode">Local (navegador)</span>
+        <button id="btnExport">Exportar JSON</button>
+      </div>
+    </aside>
+
+    <aside class="sidebar-secundario hidden" id="sidebarSecundario">
+      <div class="ss-header">
+        <div>
+          <div class="ss-title" id="ssTitle">Lista</div>
+          <div class="ss-count" id="ssCount">0</div>
+        </div>
+        <button class="ss-add" id="ssAddBtn" title="Agregar">+</button>
+      </div>
+      <div class="ss-list" id="ssList"></div>
+    </aside>
+
+    <main class="main" id="main"></main>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- MODAL SERVICIO -->
+<div class="modal-overlay" id="modalServicio">
+  <div class="modal-content">
+    <h3 id="tituloModalServicio">Nuevo servicio</h3>
+    <div class="form-row">
+      <label>Nombre</label>
+      <input type="text" id="svcNombre" placeholder="Ej. Netflix Premium" />
+    </div>
+    <div class="form-grid2">
+      <div class="form-row">
+        <label>Costo mensual (te cuesta)</label>
+        <input type="number" id="svcCosto" min="0" step="0.01" placeholder="0.00" />
+      </div>
+      <div class="form-row">
+        <label>Precio mensual (cobras)</label>
+        <input type="number" id="svcPrecio" min="0" step="0.01" placeholder="0.00" />
+      </div>
+    </div>
+    <div class="form-row">
+      <label>Cantidad de cuentas que manejas</label>
+      <input type="number" id="svcCantidad" min="1" step="1" placeholder="1" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" id="cancelServicio">Cancelar</button>
+      <button class="btn btn-primary" id="confirmServicio">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL USUARIO -->
+<div class="modal-overlay" id="modalUsuario">
+  <div class="modal-content">
+    <h3 id="tituloModalUsuario">Nuevo usuario</h3>
+    <div class="form-row">
+      <label>Nombre</label>
+      <input type="text" id="usrNombre" placeholder="Nombre del cliente" />
+    </div>
+    <div class="form-grid2">
+      <div class="form-row">
+        <label>Teléfono</label>
+        <input type="tel" id="usrTelefono" placeholder="10 dígitos" />
+      </div>
+      <div class="form-row">
+        <label>Día de pago (1-31)</label>
+        <input type="number" id="usrDiaPago" min="1" max="31" placeholder="Ej. 5" />
+      </div>
+    </div>
+
+    <div class="form-row">
+      <label>Servicios asociados</label>
+      <div id="usrServiciosAsignados"></div>
+      <select id="selectAgregarServicio" style="margin-top:8px;">
+        <option value="">+ Agregar servicio...</option>
+      </select>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-outline" id="cancelUsuario">Cancelar</button>
+      <button class="btn btn-primary" id="confirmUsuario">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ASIGNACIÓN DE SERVICIO A USUARIO -->
+<div class="modal-overlay" id="modalAsignacion">
+  <div class="modal-content">
+    <h3>Datos de acceso del servicio</h3>
+    <div class="form-row">
+      <label>Tipo de acceso</label>
+      <select id="asigTipo">
+        <option value="compartido">Compartido (cuenta grupal)</option>
+        <option value="individual">Individual</option>
+      </select>
+    </div>
+    <div class="form-grid2">
+      <div class="form-row">
+        <label>Usuario / correo de acceso</label>
+        <input type="text" id="asigUsuarioAcceso" placeholder="correo@ejemplo.com" />
+      </div>
+      <div class="form-row">
+        <label>Contraseña</label>
+        <input type="text" id="asigPassword" placeholder="contraseña" />
+      </div>
+    </div>
+    <div class="form-row">
+      <label>Dispositivo(s)</label>
+      <input type="text" id="asigDispositivo" placeholder="Ej. TV Sala, Celular" />
+    </div>
+    <div class="form-row">
+      <label>Precio mensual acordado</label>
+      <input type="number" id="asigPrecio" min="0" step="0.01" placeholder="0.00" />
+      <div class="hint">Por defecto toma el precio del servicio, puedes ajustarlo (descuento).</div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" id="cancelAsignacion">Cancelar</button>
+      <button class="btn btn-primary" id="confirmAsignacion">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   CAPA DE PERSISTENCIA (abstracta)
+   Hoy: localStorage. Mañana: JSONBin.io sin tocar el resto del código.
+   Para migrar: define JSONBIN_CONFIG y cambia STORAGE_DRIVER a 'jsonbin'.
+========================================================= */
+const STORAGE_DRIVER = 'localStorage'; // 'localStorage' | 'jsonbin'
+const JSONBIN_CONFIG = { apiKey: '', binId: '', baseUrl: 'https://api.jsonbin.io/v3/b/' };
+const LS_KEY = 'streamingAppData';
+
+const Storage = {
+  async load() {
+    if (STORAGE_DRIVER === 'jsonbin' && JSONBIN_CONFIG.apiKey && JSONBIN_CONFIG.binId) {
+      try {
+        const res = await fetch(JSONBIN_CONFIG.baseUrl + JSONBIN_CONFIG.binId + '/latest', {
+          headers: { 'X-Master-Key': JSONBIN_CONFIG.apiKey }
+        });
+        const json = await res.json();
+        return json.record || null;
+      } catch (e) { console.error('Error cargando JSONBin', e); return null; }
+    }
+    const raw = localStorage.getItem(LS_KEY);
+    return raw ? JSON.parse(raw) : null;
+  },
+  async save(data) {
+    if (STORAGE_DRIVER === 'jsonbin' && JSONBIN_CONFIG.apiKey && JSONBIN_CONFIG.binId) {
+      try {
+        await fetch(JSONBIN_CONFIG.baseUrl + JSONBIN_CONFIG.binId, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_CONFIG.apiKey },
+          body: JSON.stringify(data)
+        });
+      } catch (e) { console.error('Error guardando en JSONBin', e); }
+    }
+    localStorage.setItem(LS_KEY, JSON.stringify(data));
+  }
+};
+
+/* =========================================================
+   ESTADO
+========================================================= */
+let db = {
+  servicios: [],
+  usuarios: [],
+  pagos: [] // { id, usuarioId, servicioId, periodo: 'YYYY-MM', monto, fecha, estado: 'pagado' }
+};
+let vistaActual = 'dashboard';
+let editandoServicioId = null;
+let editandoUsuarioId = null;
+let servicioSeleccionadoId = null;
+let usuarioSeleccionadoId = null;
+let asignacionesTemp = []; // servicios asociados mientras se edita/crea un usuario
+let asignacionEditIndex = null;
+
+const main = document.getElementById('main');
+
+function uid(prefix) { return prefix + '_' + Date.now() + '_' + Math.floor(Math.random() * 1000); }
+
+function money(n) {
+  n = Number(n) || 0;
+  return '$' + n.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+async function persist() {
+  await Storage.save(db);
+}
+
+/* =========================================================
+   CÁLCULOS DE NEGOCIO
+========================================================= */
+function periodoActual() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+}
+
+function pagoRegistrado(usuarioId, servicioId, periodo) {
+  return db.pagos.find(p => p.usuarioId === usuarioId && p.servicioId === servicioId && p.periodo === periodo);
+}
+
+function diasParaProximoPago(diaPago) {
+  const hoy = new Date();
+  let venc = new Date(hoy.getFullYear(), hoy.getMonth(), diaPago);
+  if (venc < new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())) {
+    venc = new Date(hoy.getFullYear(), hoy.getMonth() + 1, diaPago);
+  }
+  return Math.round((venc - new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())) / 86400000);
+}
+
+function ingresoMensualTotal() {
+  let total = 0;
+  db.usuarios.forEach(u => u.servicios.forEach(s => total += Number(s.precio) || 0));
+  return total;
+}
+function costoMensualTotal() {
+  let total = 0;
+  db.usuarios.forEach(u => u.servicios.forEach(s => {
+    const svc = db.servicios.find(x => x.id === s.servicioId);
+    if (svc) total += Number(svc.costoMensual) || 0;
+  }));
+  return total;
+}
+function gananciaMensual() { return ingresoMensualTotal() - costoMensualTotal(); }
+
+function cuentasUsadasDeServicio(servicioId) {
+  // aproximación: cada asignación "compartida" o "individual" cuenta como uso de 1 cupo lógico por usuario-servicio
+  return db.usuarios.reduce((acc, u) => acc + u.servicios.filter(s => s.servicioId === servicioId).length, 0);
+}
+
+/* =========================================================
+   NAVEGACIÓN
+========================================================= */
+document.querySelectorAll('#navMain .nav-item').forEach(el => {
+  el.addEventListener('click', () => {
+    vistaActual = el.dataset.vista;
+    document.querySelectorAll('#navMain .nav-item').forEach(x => x.classList.remove('active'));
+    el.classList.add('active');
+    render();
+  });
+});
+
+function render() {
+  renderSidebarSecundario();
+  if (vistaActual === 'dashboard') renderDashboard();
+  else if (vistaActual === 'servicios') renderServicios();
+  else if (vistaActual === 'usuarios') renderUsuarios();
+  else if (vistaActual === 'pagos') renderPagos();
+}
+
+/* =========================================================
+   TOPBAR: fecha/hora del sistema
+========================================================= */
+function actualizarReloj() {
+  const ahora = new Date();
+  const fecha = ahora.toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const hora = ahora.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+  document.getElementById('topFecha').textContent = fecha;
+  document.getElementById('topHora').textContent = hora;
+}
+
+/* =========================================================
+   SIDEBAR SECUNDARIO (lista de servicios o usuarios)
+========================================================= */
+function renderSidebarSecundario() {
+  const ss = document.getElementById('sidebarSecundario');
+  const ssTitle = document.getElementById('ssTitle');
+  const ssCount = document.getElementById('ssCount');
+  const ssList = document.getElementById('ssList');
+  const ssAddBtn = document.getElementById('ssAddBtn');
+
+  if (vistaActual !== 'servicios' && vistaActual !== 'usuarios') {
+    ss.classList.add('hidden');
+    return;
+  }
+  ss.classList.remove('hidden');
+
+  if (vistaActual === 'servicios') {
+    ssTitle.textContent = 'Servicios';
+    ssCount.textContent = db.servicios.length + ' registrado(s)';
+    ssAddBtn.onclick = () => abrirModalServicio(null);
+    if (db.servicios.length === 0) {
+      ssList.innerHTML = `<div class="ss-empty">Sin servicios. Usa "+" para crear el primero.</div>`;
+    } else {
+      if (!servicioSeleccionadoId || !db.servicios.some(s => s.id === servicioSeleccionadoId)) {
+        servicioSeleccionadoId = db.servicios[0].id;
+      }
+      ssList.innerHTML = db.servicios.map(s => `
+        <div class="ss-item ${s.id === servicioSeleccionadoId ? 'active' : ''}" data-sel="${s.id}">
+          <div class="ss-item-title">${s.nombre}</div>
+          <div class="ss-item-sub">${money(s.precioMensual)}/mes · ${cuentasUsadasDeServicio(s.id)}/${s.cantidad} cuentas</div>
+        </div>
+      `).join('');
+      ssList.querySelectorAll('[data-sel]').forEach(el => el.addEventListener('click', () => {
+        servicioSeleccionadoId = el.dataset.sel;
+        renderSidebarSecundario();
+        renderServicios();
+      }));
+    }
+  } else {
+    ssTitle.textContent = 'Usuarios';
+    ssCount.textContent = db.usuarios.length + ' registrado(s)';
+    ssAddBtn.disabled = db.servicios.length === 0;
+    ssAddBtn.onclick = () => abrirModalUsuario(null);
+    if (db.usuarios.length === 0) {
+      ssList.innerHTML = `<div class="ss-empty">${db.servicios.length === 0 ? 'Crea un servicio primero.' : 'Sin usuarios. Usa "+" para crear el primero.'}</div>`;
+    } else {
+      if (!usuarioSeleccionadoId || !db.usuarios.some(u => u.id === usuarioSeleccionadoId)) {
+        usuarioSeleccionadoId = db.usuarios[0].id;
+      }
+      ssList.innerHTML = db.usuarios.map(u => `
+        <div class="ss-item ${u.id === usuarioSeleccionadoId ? 'active' : ''}" data-sel="${u.id}">
+          <div class="ss-item-title">${u.nombre}</div>
+          <div class="ss-item-sub">Día ${u.diaPago} · ${u.servicios.length} servicio(s)</div>
+        </div>
+      `).join('');
+      ssList.querySelectorAll('[data-sel]').forEach(el => el.addEventListener('click', () => {
+        usuarioSeleccionadoId = el.dataset.sel;
+        renderSidebarSecundario();
+        renderUsuarios();
+      }));
+    }
+  }
+}
+
+/* =========================================================
+   DASHBOARD / PANEL ADMINISTRATIVO
+========================================================= */
+function renderDashboard() {
+  const periodo = periodoActual();
+  let pagados = 0, pendientes = 0, vencidos = 0;
+  const hoyDia = new Date().getDate();
+
+  db.usuarios.forEach(u => {
+    u.servicios.forEach(s => {
+      const pago = pagoRegistrado(u.id, s.servicioId, periodo);
+      if (pago) pagados++;
+      else if (u.diaPago && hoyDia > Number(u.diaPago)) vencidos++;
+      else pendientes++;
+    });
+  });
+
+  const proximos = db.usuarios
+    .map(u => ({ u, dias: diasParaProximoPago(Number(u.diaPago) || 1) }))
+    .sort((a, b) => a.dias - b.dias)
+    .slice(0, 6);
+
+  main.innerHTML = `
+    <div class="page-header">
+      <div>
+        <div class="page-title">Panel administrativo</div>
+        <div class="page-sub">Resumen general del negocio · ${new Date().toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })}</div>
+      </div>
+    </div>
+    <div class="grid-cards">
+      <div class="stat-card"><div class="n">${db.usuarios.length}</div><div class="l">Usuarios</div></div>
+      <div class="stat-card"><div class="n">${db.servicios.length}</div><div class="l">Servicios</div></div>
+      <div class="stat-card good"><div class="n">${money(ingresoMensualTotal())}</div><div class="l">Ingreso mensual</div></div>
+      <div class="stat-card"><div class="n">${money(costoMensualTotal())}</div><div class="l">Costo mensual</div></div>
+      <div class="stat-card good"><div class="n">${money(gananciaMensual())}</div><div class="l">Ganancia mensual</div></div>
+      <div class="stat-card warn"><div class="n">${pendientes}</div><div class="l">Pagos pendientes</div></div>
+      <div class="stat-card danger"><div class="n">${vencidos}</div><div class="l">Pagos vencidos</div></div>
+      <div class="stat-card good"><div class="n">${pagados}</div><div class="l">Pagos del mes cubiertos</div></div>
+    </div>
+
+    <div class="page-title" style="font-size:15px; margin-bottom:10px;">Próximos cobros</div>
+    <table>
+      <thead><tr><th>Usuario</th><th>Teléfono</th><th>Día de pago</th><th>Faltan</th><th>Servicios</th></tr></thead>
+      <tbody>
+        ${proximos.length === 0 ? `<tr class="empty-row"><td colspan="5">No hay usuarios registrados.</td></tr>` :
+          proximos.map(({ u, dias }) => `
+            <tr>
+              <td>${u.nombre}</td>
+              <td>${u.telefono || '-'}</td>
+              <td>Día ${u.diaPago}</td>
+              <td>${dias === 0 ? '<span class="badge badge-warn">Hoy</span>' : dias + ' días'}</td>
+              <td>${u.servicios.length}</td>
+            </tr>
+          `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+/* =========================================================
+   SERVICIOS (CRUD)
+========================================================= */
+function renderServicios() {
+  if (db.servicios.length === 0) {
+    main.innerHTML = `
+      <div class="page-header">
+        <div>
+          <div class="page-title">Servicios</div>
+          <div class="page-sub">0 servicios registrados</div>
+        </div>
+        <button class="btn btn-primary" id="btnNuevoServicio">+ Nuevo servicio</button>
+      </div>
+      <div class="placeholder-msg">No hay servicios. Crea el primero para poder registrar usuarios.</div>
+    `;
+    document.getElementById('btnNuevoServicio').addEventListener('click', () => abrirModalServicio(null));
+    return;
+  }
+
+  const s = db.servicios.find(x => x.id === servicioSeleccionadoId) || db.servicios[0];
+  const usadas = cuentasUsadasDeServicio(s.id);
+  const ganancia = (Number(s.precioMensual) || 0) - (Number(s.costoMensual) || 0);
+  const usuariosDeServicio = db.usuarios.filter(u => u.servicios.some(a => a.servicioId === s.id));
+
+  main.innerHTML = `
+    <div class="page-header">
+      <div>
+        <div class="page-title">${s.nombre}</div>
+        <div class="page-sub">Detalle del servicio</div>
+      </div>
+      <div class="tbl-actions">
+        <button class="btn btn-outline" id="btnEditarServicio">Editar</button>
+        <button class="btn btn-danger" id="btnEliminarServicio">Eliminar</button>
+      </div>
+    </div>
+    <div class="grid-cards">
+      <div class="stat-card"><div class="n">${money(s.costoMensual)}</div><div class="l">Costo mensual</div></div>
+      <div class="stat-card"><div class="n">${money(s.precioMensual)}</div><div class="l">Precio mensual</div></div>
+      <div class="stat-card good"><div class="n">${money(ganancia)}</div><div class="l">Ganancia por cuenta</div></div>
+      <div class="stat-card"><div class="n">${usadas} / ${s.cantidad}</div><div class="l">Cuentas usadas</div></div>
+    </div>
+    <div class="page-title" style="font-size:15px; margin-bottom:10px;">Usuarios con este servicio</div>
+    <table>
+      <thead><tr><th>Usuario</th><th>Teléfono</th><th>Día de pago</th><th>Precio acordado</th></tr></thead>
+      <tbody>
+        ${usuariosDeServicio.length === 0 ? `<tr class="empty-row"><td colspan="4">Ningún usuario tiene este servicio todavía.</td></tr>` :
+          usuariosDeServicio.map(u => {
+            const a = u.servicios.find(x => x.servicioId === s.id);
+            return `<tr><td>${u.nombre}</td><td>${u.telefono || '-'}</td><td>Día ${u.diaPago}</td><td>${money(a.precio)}</td></tr>`;
+          }).join('')}
+      </tbody>
+    </table>
+  `;
+  document.getElementById('btnEditarServicio').addEventListener('click', () => abrirModalServicio(s.id));
+  document.getElementById('btnEliminarServicio').addEventListener('click', () => eliminarServicio(s.id));
+}
+
+function abrirModalServicio(id) {
+  editandoServicioId = id;
+  const modal = document.getElementById('modalServicio');
+  document.getElementById('tituloModalServicio').textContent = id ? 'Editar servicio' : 'Nuevo servicio';
+  if (id) {
+    const s = db.servicios.find(x => x.id === id);
+    document.getElementById('svcNombre').value = s.nombre;
+    document.getElementById('svcCosto').value = s.costoMensual;
+    document.getElementById('svcPrecio').value = s.precioMensual;
+    document.getElementById('svcCantidad').value = s.cantidad;
+  } else {
+    document.getElementById('svcNombre').value = '';
+    document.getElementById('svcCosto').value = '';
+    document.getElementById('svcPrecio').value = '';
+    document.getElementById('svcCantidad').value = '';
+  }
+  modal.classList.add('active');
+}
+
+document.getElementById('cancelServicio').addEventListener('click', () => document.getElementById('modalServicio').classList.remove('active'));
+document.getElementById('modalServicio').addEventListener('click', e => { if (e.target === e.currentTarget) e.currentTarget.classList.remove('active'); });
+
+document.getElementById('confirmServicio').addEventListener('click', async () => {
+  const nombre = document.getElementById('svcNombre').value.trim();
+  const costo = document.getElementById('svcCosto').value;
+  const precio = document.getElementById('svcPrecio').value;
+  const cantidad = document.getElementById('svcCantidad').value;
+  if (!nombre || costo === '' || precio === '' || cantidad === '') {
+    showToast('Completa todos los campos.');
+    return;
+  }
+  if (editandoServicioId) {
+    const s = db.servicios.find(x => x.id === editandoServicioId);
+    s.nombre = nombre; s.costoMensual = Number(costo); s.precioMensual = Number(precio); s.cantidad = Number(cantidad);
+  } else {
+    db.servicios.push({ id: uid('svc'), nombre, costoMensual: Number(costo), precioMensual: Number(precio), cantidad: Number(cantidad) });
+  }
+  await persist();
+  document.getElementById('modalServicio').classList.remove('active');
+  if (!editandoServicioId) servicioSeleccionadoId = db.servicios[db.servicios.length - 1].id;
+  render();
+  showToast('Servicio guardado.');
+});
+
+function eliminarServicio(id) {
+  const enUso = db.usuarios.some(u => u.servicios.some(s => s.servicioId === id));
+  if (enUso) {
+    if (!confirm('Este servicio está asignado a usuarios. Si lo eliminas, se quitará también de sus perfiles. ¿Continuar?')) return;
+    db.usuarios.forEach(u => { u.servicios = u.servicios.filter(s => s.servicioId !== id); });
+  } else {
+    if (!confirm('¿Eliminar este servicio?')) return;
+  }
+  db.servicios = db.servicios.filter(s => s.id !== id);
+  servicioSeleccionadoId = null;
+  persist().then(() => { render(); showToast('Servicio eliminado.'); });
+}
+
+/* =========================================================
+   USUARIOS (CRUD)
+========================================================= */
+function renderUsuarios() {
+  if (db.usuarios.length === 0) {
+    main.innerHTML = `
+      <div class="page-header">
+        <div>
+          <div class="page-title">Usuarios</div>
+          <div class="page-sub">0 usuarios registrados</div>
+        </div>
+        <button class="btn btn-primary" id="btnNuevoUsuario" ${db.servicios.length === 0 ? 'disabled' : ''}>+ Nuevo usuario</button>
+      </div>
+      <div class="placeholder-msg">${db.servicios.length === 0 ? 'Primero debes crear al menos un servicio para poder registrar usuarios.' : 'No hay usuarios. Crea el primero.'}</div>
+    `;
+    document.getElementById('btnNuevoUsuario')?.addEventListener('click', () => abrirModalUsuario(null));
+    return;
+  }
+
+  const u = db.usuarios.find(x => x.id === usuarioSeleccionadoId) || db.usuarios[0];
+  const total = u.servicios.reduce((acc, s) => acc + (Number(s.precio) || 0), 0);
+  const dias = diasParaProximoPago(Number(u.diaPago) || 1);
+
+  main.innerHTML = `
+    <div class="page-header">
+      <div>
+        <div class="page-title">${u.nombre}</div>
+        <div class="page-sub">Teléfono: ${u.telefono || '-'} · Día de pago: ${u.diaPago} · Próximo cobro en ${dias} día(s)</div>
+      </div>
+      <div class="tbl-actions">
+        <button class="btn btn-outline" id="btnEditarUsuario">Editar</button>
+        <button class="btn btn-danger" id="btnEliminarUsuario">Eliminar</button>
+      </div>
+    </div>
+    <div class="grid-cards">
+      <div class="stat-card good"><div class="n">${money(total)}</div><div class="l">Total mensual</div></div>
+      <div class="stat-card"><div class="n">${u.servicios.length}</div><div class="l">Servicios asociados</div></div>
+    </div>
+    <div class="page-title" style="font-size:15px; margin-bottom:10px;">Servicios y accesos</div>
+    <table>
+      <thead><tr><th>Servicio</th><th>Tipo</th><th>Usuario acceso</th><th>Contraseña</th><th>Dispositivo</th><th>Precio</th></tr></thead>
+      <tbody>
+        ${u.servicios.map(a => {
+          const svc = db.servicios.find(x => x.id === a.servicioId);
+          return `
+            <tr>
+              <td>${svc ? svc.nombre : '?'}</td>
+              <td>${a.tipo === 'individual' ? '<span class="badge badge-neutral">Individual</span>' : '<span class="badge badge-ok">Compartido</span>'}</td>
+              <td>${a.usuarioAcceso || '-'}</td>
+              <td>${a.password || '-'}</td>
+              <td>${a.dispositivo || '-'}</td>
+              <td>${money(a.precio)}</td>
+            </tr>
+          `;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+  document.getElementById('btnEditarUsuario').addEventListener('click', () => abrirModalUsuario(u.id));
+  document.getElementById('btnEliminarUsuario').addEventListener('click', () => eliminarUsuario(u.id));
+}
+
+function abrirModalUsuario(id) {
+  editandoUsuarioId = id;
+  document.getElementById('tituloModalUsuario').textContent = id ? 'Editar usuario' : 'Nuevo usuario';
+  if (id) {
+    const u = db.usuarios.find(x => x.id === id);
+    document.getElementById('usrNombre').value = u.nombre;
+    document.getElementById('usrTelefono').value = u.telefono || '';
+    document.getElementById('usrDiaPago').value = u.diaPago || '';
+    asignacionesTemp = JSON.parse(JSON.stringify(u.servicios));
+  } else {
+    document.getElementById('usrNombre').value = '';
+    document.getElementById('usrTelefono').value = '';
+    document.getElementById('usrDiaPago').value = '';
+    asignacionesTemp = [];
+  }
+  renderAsignacionesTemp();
+  poblarSelectServicios();
+  document.getElementById('modalUsuario').classList.add('active');
+}
+
+function poblarSelectServicios() {
+  const sel = document.getElementById('selectAgregarServicio');
+  sel.innerHTML = '<option value="">+ Agregar servicio...</option>';
+  db.servicios.forEach(s => {
+    const yaAsignado = asignacionesTemp.some(a => a.servicioId === s.id);
+    if (!yaAsignado) {
+      const opt = document.createElement('option');
+      opt.value = s.id;
+      opt.textContent = s.nombre;
+      sel.appendChild(opt);
+    }
+  });
+}
+
+function renderAsignacionesTemp() {
+  const cont = document.getElementById('usrServiciosAsignados');
+  if (asignacionesTemp.length === 0) {
+    cont.innerHTML = `<div class="hint">Sin servicios asociados aún.</div>`;
+    return;
+  }
+  cont.innerHTML = asignacionesTemp.map((a, idx) => {
+    const svc = db.servicios.find(x => x.id === a.servicioId);
+    return `
+      <div class="svc-assign-block">
+        <div class="top">
+          <strong>${svc ? svc.nombre : '?'} · ${a.tipo === 'individual' ? 'Individual' : 'Compartido'}</strong>
+          <div>
+            <button class="btn btn-outline btn-sm" data-editasig="${idx}">Editar acceso</button>
+            <button class="remove-btn" data-delasig="${idx}">Quitar ✕</button>
+          </div>
+        </div>
+        <div style="font-size:12px; color:#666;">
+          Usuario: ${a.usuarioAcceso || '-'} · Dispositivo: ${a.dispositivo || '-'} · Precio: ${money(a.precio)}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  cont.querySelectorAll('[data-editasig]').forEach(b => b.addEventListener('click', () => abrirModalAsignacion(Number(b.dataset.editasig))));
+  cont.querySelectorAll('[data-delasig]').forEach(b => b.addEventListener('click', () => {
+    asignacionesTemp.splice(Number(b.dataset.delasig), 1);
+    renderAsignacionesTemp();
+    poblarSelectServicios();
+  }));
+}
+
+document.getElementById('selectAgregarServicio').addEventListener('change', function() {
+  const servicioId = this.value;
+  if (!servicioId) return;
+  const svc = db.servicios.find(x => x.id === servicioId);
+  asignacionesTemp.push({ servicioId, tipo: 'compartido', usuarioAcceso: '', password: '', dispositivo: '', precio: svc.precioMensual });
+  renderAsignacionesTemp();
+  poblarSelectServicios();
+  abrirModalAsignacion(asignacionesTemp.length - 1);
+});
+
+function abrirModalAsignacion(idx) {
+  asignacionEditIndex = idx;
+  const a = asignacionesTemp[idx];
+  document.getElementById('asigTipo').value = a.tipo || 'compartido';
+  document.getElementById('asigUsuarioAcceso').value = a.usuarioAcceso || '';
+  document.getElementById('asigPassword').value = a.password || '';
+  document.getElementById('asigDispositivo').value = a.dispositivo || '';
+  document.getElementById('asigPrecio').value = a.precio;
+  document.getElementById('modalAsignacion').classList.add('active');
+}
+
+document.getElementById('cancelAsignacion').addEventListener('click', () => document.getElementById('modalAsignacion').classList.remove('active'));
+document.getElementById('modalAsignacion').addEventListener('click', e => { if (e.target === e.currentTarget) e.currentTarget.classList.remove('active'); });
+
+document.getElementById('confirmAsignacion').addEventListener('click', () => {
+  const a = asignacionesTemp[asignacionEditIndex];
+  a.tipo = document.getElementById('asigTipo').value;
+  a.usuarioAcceso = document.getElementById('asigUsuarioAcceso').value.trim();
+  a.password = document.getElementById('asigPassword').value;
+  a.dispositivo = document.getElementById('asigDispositivo').value.trim();
+  a.precio = Number(document.getElementById('asigPrecio').value) || 0;
+  document.getElementById('modalAsignacion').classList.remove('active');
+  renderAsignacionesTemp();
+});
+
+document.getElementById('cancelUsuario').addEventListener('click', () => document.getElementById('modalUsuario').classList.remove('active'));
+document.getElementById('modalUsuario').addEventListener('click', e => { if (e.target === e.currentTarget) e.currentTarget.classList.remove('active'); });
+
+document.getElementById('confirmUsuario').addEventListener('click', async () => {
+  const nombre = document.getElementById('usrNombre').value.trim();
+  const telefono = document.getElementById('usrTelefono').value.trim();
+  const diaPago = document.getElementById('usrDiaPago').value;
+  if (!nombre || !diaPago) { showToast('Nombre y día de pago son obligatorios.'); return; }
+  if (asignacionesTemp.length === 0) { showToast('Asocia al menos un servicio.'); return; }
+
+  if (editandoUsuarioId) {
+    const u = db.usuarios.find(x => x.id === editandoUsuarioId);
+    u.nombre = nombre; u.telefono = telefono; u.diaPago = Number(diaPago); u.servicios = asignacionesTemp;
+  } else {
+    db.usuarios.push({ id: uid('usr'), nombre, telefono, diaPago: Number(diaPago), servicios: asignacionesTemp });
+  }
+  await persist();
+  document.getElementById('modalUsuario').classList.remove('active');
+  if (!editandoUsuarioId) usuarioSeleccionadoId = db.usuarios[db.usuarios.length - 1].id;
+  render();
+  showToast('Usuario guardado.');
+});
+
+function eliminarUsuario(id) {
+  if (!confirm('¿Eliminar este usuario y su historial de pagos?')) return;
+  db.usuarios = db.usuarios.filter(u => u.id !== id);
+  db.pagos = db.pagos.filter(p => p.usuarioId !== id);
+  usuarioSeleccionadoId = null;
+  persist().then(() => { render(); showToast('Usuario eliminado.'); });
+}
+
+/* =========================================================
+   PAGOS Y ADEUDOS
+========================================================= */
+function renderPagos() {
+  const periodo = periodoActual();
+  const hoyDia = new Date().getDate();
+  let filas = [];
+  db.usuarios.forEach(u => {
+    u.servicios.forEach(s => {
+      const svc = db.servicios.find(x => x.id === s.servicioId);
+      const pago = pagoRegistrado(u.id, s.servicioId, periodo);
+      let estado = 'pendiente';
+      if (pago) estado = 'pagado';
+      else if (u.diaPago && hoyDia > Number(u.diaPago)) estado = 'vencido';
+      filas.push({ usuario: u, servicio: svc, asignacion: s, estado, pago });
+    });
+  });
+
+  main.innerHTML = `
+    <div class="page-header">
+      <div>
+        <div class="page-title">Pagos y adeudos</div>
+        <div class="page-sub">Periodo actual: ${periodo}</div>
+      </div>
+    </div>
+    <table>
+      <thead><tr><th>Usuario</th><th>Servicio</th><th>Día pago</th><th>Monto</th><th>Estado</th><th>Acciones</th></tr></thead>
+      <tbody>
+        ${filas.length === 0 ? `<tr class="empty-row"><td colspan="6">No hay usuarios con servicios asociados.</td></tr>` :
+          filas.map(f => `
+            <tr>
+              <td>${f.usuario.nombre}</td>
+              <td>${f.servicio ? f.servicio.nombre : '?'}</td>
+              <td>Día ${f.usuario.diaPago}</td>
+              <td>${money(f.asignacion.precio)}</td>
+              <td>
+                ${f.estado === 'pagado' ? '<span class="badge badge-ok">Pagado</span>' :
+                  f.estado === 'vencido' ? '<span class="badge badge-danger">Vencido</span>' :
+                  '<span class="badge badge-warn">Pendiente</span>'}
+              </td>
+              <td class="tbl-actions">
+                ${f.estado === 'pagado'
+                  ? `<button class="btn btn-outline btn-sm" data-unpay="${f.usuario.id}|${f.servicio.id}">Desmarcar</button>`
+                  : `<button class="btn btn-primary btn-sm" data-pay="${f.usuario.id}|${f.servicio.id}|${f.asignacion.precio}">Marcar pagado</button>`}
+              </td>
+            </tr>
+          `).join('')}
+      </tbody>
+    </table>
+  `;
+
+  main.querySelectorAll('[data-pay]').forEach(b => b.addEventListener('click', async () => {
+    const [usuarioId, servicioId, monto] = b.dataset.pay.split('|');
+    db.pagos.push({ id: uid('pago'), usuarioId, servicioId, periodo, monto: Number(monto), fecha: new Date().toISOString(), estado: 'pagado' });
+    await persist();
+    renderPagos();
+    showToast('Pago registrado.');
+  }));
+  main.querySelectorAll('[data-unpay]').forEach(b => b.addEventListener('click', async () => {
+    const [usuarioId, servicioId] = b.dataset.unpay.split('|');
+    db.pagos = db.pagos.filter(p => !(p.usuarioId === usuarioId && p.servicioId === servicioId && p.periodo === periodo));
+    await persist();
+    renderPagos();
+    showToast('Pago desmarcado.');
+  }));
+}
+
+/* =========================================================
+   BUSCADOR GLOBAL (servicios y usuarios)
+========================================================= */
+const buscadorGlobal = document.getElementById('buscadorGlobal');
+const searchBackdrop = document.getElementById('searchBackdrop');
+const searchResults = document.getElementById('searchResults');
+
+function cerrarBusqueda() {
+  searchBackdrop.classList.remove('active');
+  searchResults.classList.remove('active');
+}
+
+function ejecutarBusqueda() {
+  const q = buscadorGlobal.value.trim().toLowerCase();
+  if (!q) { cerrarBusqueda(); return; }
+
+  const svcs = db.servicios.filter(s => s.nombre.toLowerCase().includes(q));
+  const usrs = db.usuarios.filter(u => u.nombre.toLowerCase().includes(q) || (u.telefono || '').includes(q));
+  const total = svcs.length + usrs.length;
+
+  let html = `
+    <div class="sr-topbar">
+      <div><strong>Resultados</strong> <span class="sr-count">${total} encontrado(s)</span></div>
+      <button class="sr-close" id="srCloseBtn">✕</button>
+    </div>
+  `;
+
+  if (total === 0) {
+    html += `<div class="sr-empty">Sin resultados para "${buscadorGlobal.value}".</div>`;
+  } else {
+    if (svcs.length > 0) {
+      html += `<div class="sr-group">Servicios (${svcs.length})</div>`;
+      svcs.forEach(s => { html += tarjetaServicioRapida(s); });
+    }
+    if (usrs.length > 0) {
+      html += `<div class="sr-group">Usuarios (${usrs.length})</div>`;
+      usrs.forEach(u => { html += tarjetaUsuarioRapida(u); });
+    }
+  }
+
+  searchResults.innerHTML = html;
+  document.getElementById('srCloseBtn').addEventListener('click', () => { cerrarBusqueda(); buscadorGlobal.value = ''; });
+  enlazarTarjetasRapidas();
+  searchBackdrop.classList.add('active');
+  searchResults.classList.add('active');
+}
+
+function tarjetaServicioRapida(s) {
+  const usadas = cuentasUsadasDeServicio(s.id);
+  const ganancia = (Number(s.precioMensual) || 0) - (Number(s.costoMensual) || 0);
+  const usuariosDeServicio = db.usuarios.filter(u => u.servicios.some(a => a.servicioId === s.id));
+  const ingresoServicio = usuariosDeServicio.reduce((acc, u) => {
+    const a = u.servicios.find(x => x.servicioId === s.id);
+    return acc + (Number(a.precio) || 0);
+  }, 0);
+  return `
+    <div class="sr-card" data-servicio-card="${s.id}">
+      <div class="sr-card-head">
+        <span class="sr-card-title">${s.nombre}</span>
+        <div class="tbl-actions">
+          <button class="btn btn-outline btn-sm" data-svc-save="${s.id}">Guardar</button>
+          <button class="btn btn-danger btn-sm" data-svc-del="${s.id}">Eliminar</button>
+        </div>
+      </div>
+      <div class="sr-stats-row">
+        <div class="sr-stat good"><div class="n">${money(ingresoServicio)}</div><div class="l">Ingreso mensual</div></div>
+        <div class="sr-stat good"><div class="n">${money(ganancia)}</div><div class="l">Ganancia/cuenta</div></div>
+        <div class="sr-stat"><div class="n">${usadas}/${s.cantidad}</div><div class="l">Cuentas usadas</div></div>
+        <div class="sr-stat"><div class="n">${usuariosDeServicio.length}</div><div class="l">Usuarios</div></div>
+      </div>
+      <div class="sr-mini-grid">
+        <div class="sr-field"><label>Nombre</label><input type="text" data-svc-field="nombre" value="${s.nombre}" /></div>
+        <div class="sr-field"><label>Cantidad de cuentas</label><input type="number" min="1" data-svc-field="cantidad" value="${s.cantidad}" /></div>
+        <div class="sr-field"><label>Costo mensual</label><input type="number" min="0" step="0.01" data-svc-field="costoMensual" value="${s.costoMensual}" /></div>
+        <div class="sr-field"><label>Precio mensual</label><input type="number" min="0" step="0.01" data-svc-field="precioMensual" value="${s.precioMensual}" /></div>
+      </div>
+      ${usuariosDeServicio.length > 0 ? `
+        <table>
+          <thead><tr><th>Usuario</th><th>Día pago</th><th>Precio</th></tr></thead>
+          <tbody>
+            ${usuariosDeServicio.map(u => {
+              const a = u.servicios.find(x => x.servicioId === s.id);
+              return `<tr><td>${u.nombre}</td><td>Día ${u.diaPago}</td><td>${money(a.precio)}</td></tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      ` : `<div style="font-size:11.5px; color:#999; margin-top:6px;">Ningún usuario tiene este servicio.</div>`}
+    </div>
+  `;
+}
+
+function tarjetaUsuarioRapida(u) {
+  const total = u.servicios.reduce((acc, a) => acc + (Number(a.precio) || 0), 0);
+  const periodo = periodoActual();
+  const hoyDia = new Date().getDate();
+  const historial = db.pagos.filter(p => p.usuarioId === u.id).sort((a, b) => b.periodo.localeCompare(a.periodo));
+
+  let pagados = 0, pendientes = 0, vencidos = 0;
+  u.servicios.forEach(a => {
+    const pago = pagoRegistrado(u.id, a.servicioId, periodo);
+    if (pago) pagados++;
+    else if (u.diaPago && hoyDia > Number(u.diaPago)) vencidos++;
+    else pendientes++;
+  });
+
+  return `
+    <div class="sr-card" data-usuario-card="${u.id}">
+      <div class="sr-card-head">
+        <span class="sr-card-title">${u.nombre}</span>
+        <div class="tbl-actions">
+          <button class="btn btn-outline btn-sm" data-usr-save="${u.id}">Guardar</button>
+          <button class="btn btn-danger btn-sm" data-usr-del="${u.id}">Eliminar</button>
+        </div>
+      </div>
+      <div class="sr-stats-row">
+        <div class="sr-stat good"><div class="n">${money(total)}</div><div class="l">Total mensual</div></div>
+        <div class="sr-stat"><div class="n">${u.servicios.length}</div><div class="l">Servicios</div></div>
+        <div class="sr-stat ${pagados > 0 ? 'good' : ''}"><div class="n">${pagados}</div><div class="l">Pagados</div></div>
+        <div class="sr-stat ${vencidos > 0 ? 'danger' : (pendientes > 0 ? 'warn' : '')}"><div class="n">${vencidos + pendientes}</div><div class="l">Por cobrar</div></div>
+      </div>
+      <div class="sr-mini-grid">
+        <div class="sr-field"><label>Nombre</label><input type="text" data-usr-field="nombre" value="${u.nombre}" /></div>
+        <div class="sr-field"><label>Teléfono</label><input type="text" data-usr-field="telefono" value="${u.telefono || ''}" /></div>
+        <div class="sr-field"><label>Día de pago</label><input type="number" min="1" max="31" data-usr-field="diaPago" value="${u.diaPago}" /></div>
+      </div>
+      ${u.servicios.length > 0 ? `
+        <table data-usr-servicios-tabla="${u.id}">
+          <thead><tr><th>Servicio</th><th>Tipo</th><th>Usuario acceso</th><th>Contraseña</th><th>Dispositivo</th><th>Precio</th></tr></thead>
+          <tbody>
+            ${u.servicios.map((a, idx) => {
+              const svc = db.servicios.find(x => x.id === a.servicioId);
+              return `
+                <tr data-asig-idx="${idx}">
+                  <td>${svc ? svc.nombre : '?'}</td>
+                  <td>
+                    <select data-asig-field="tipo">
+                      <option value="compartido" ${a.tipo !== 'individual' ? 'selected' : ''}>Compartido</option>
+                      <option value="individual" ${a.tipo === 'individual' ? 'selected' : ''}>Individual</option>
+                    </select>
+                  </td>
+                  <td><input type="text" data-asig-field="usuarioAcceso" value="${a.usuarioAcceso || ''}" /></td>
+                  <td><input type="text" data-asig-field="password" value="${a.password || ''}" /></td>
+                  <td><input type="text" data-asig-field="dispositivo" value="${a.dispositivo || ''}" /></td>
+                  <td><input type="number" min="0" step="0.01" data-asig-field="precio" value="${a.precio}" /></td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      ` : `<div style="font-size:11.5px; color:#999; margin-top:6px;">Sin servicios asociados.</div>`}
+
+      <div class="sr-subhead">Control de pagos · periodo ${periodo}</div>
+      ${u.servicios.length > 0 ? `
+        <table>
+          <thead><tr><th>Servicio</th><th>Monto</th><th>Estado</th><th>Acción</th></tr></thead>
+          <tbody>
+            ${u.servicios.map(a => {
+              const svc = db.servicios.find(x => x.id === a.servicioId);
+              const pago = pagoRegistrado(u.id, a.servicioId, periodo);
+              let estado = pago ? 'pagado' : (u.diaPago && hoyDia > Number(u.diaPago) ? 'vencido' : 'pendiente');
+              const badge = estado === 'pagado' ? '<span class="badge badge-ok">Pagado</span>'
+                : estado === 'vencido' ? '<span class="badge badge-danger">Vencido</span>'
+                : '<span class="badge badge-warn">Pendiente</span>';
+              return `
+                <tr>
+                  <td>${svc ? svc.nombre : '?'}</td>
+                  <td>${money(a.precio)}</td>
+                  <td>${badge}</td>
+                  <td>${estado === 'pagado'
+                    ? `<button class="btn btn-outline btn-sm" data-unpay="${u.id}|${a.servicioId}">Desmarcar</button>`
+                    : `<button class="btn btn-primary btn-sm" data-pay="${u.id}|${a.servicioId}|${a.precio}">Marcar pagado</button>`}
+                  </td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      ` : ''}
+
+      ${historial.length > 0 ? `
+        <div class="sr-subhead">Historial de pagos</div>
+        <table>
+          <thead><tr><th>Periodo</th><th>Servicio</th><th>Monto</th><th>Fecha</th></tr></thead>
+          <tbody>
+            ${historial.map(p => {
+              const svc = db.servicios.find(x => x.id === p.servicioId);
+              return `<tr><td>${p.periodo}</td><td>${svc ? svc.nombre : '?'}</td><td>${money(p.monto)}</td><td>${new Date(p.fecha).toLocaleDateString('es-MX')}</td></tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      ` : ''}
+    </div>
+  `;
+}
+
+function enlazarTarjetasRapidas() {
+  searchResults.querySelectorAll('[data-svc-save]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.svcSave;
+      const s = db.servicios.find(x => x.id === id);
+      const card = searchResults.querySelector(`[data-servicio-card="${id}"]`);
+      card.querySelectorAll('[data-svc-field]').forEach(inp => {
+        const field = inp.dataset.svcField;
+        s[field] = (field === 'nombre') ? inp.value.trim() : Number(inp.value);
+      });
+      await persist();
+      showToast('Servicio actualizado.');
+      if (vistaActual === 'servicios' || vistaActual === 'dashboard' || vistaActual === 'pagos') render();
+      ejecutarBusqueda();
+    });
+  });
+  searchResults.querySelectorAll('[data-svc-del]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.svcDel;
+      eliminarServicio(id);
+      setTimeout(ejecutarBusqueda, 0);
+    });
+  });
+  searchResults.querySelectorAll('[data-usr-save]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.usrSave;
+      const u = db.usuarios.find(x => x.id === id);
+      const card = searchResults.querySelector(`[data-usuario-card="${id}"]`);
+      card.querySelectorAll('[data-usr-field]').forEach(inp => {
+        const field = inp.dataset.usrField;
+        u[field] = (field === 'diaPago') ? Number(inp.value) : inp.value.trim();
+      });
+      card.querySelectorAll('tr[data-asig-idx]').forEach(tr => {
+        const idx = Number(tr.dataset.asigIdx);
+        tr.querySelectorAll('[data-asig-field]').forEach(inp => {
+          const field = inp.dataset.asigField;
+          u.servicios[idx][field] = (field === 'precio') ? Number(inp.value) : inp.value;
+        });
+      });
+      await persist();
+      showToast('Usuario actualizado.');
+      if (vistaActual === 'usuarios' || vistaActual === 'dashboard' || vistaActual === 'pagos') render();
+      ejecutarBusqueda();
+    });
+  });
+  searchResults.querySelectorAll('[data-usr-del]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.usrDel;
+      eliminarUsuario(id);
+      setTimeout(ejecutarBusqueda, 0);
+    });
+  });
+  searchResults.querySelectorAll('[data-pay]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const [usuarioId, servicioId, monto] = btn.dataset.pay.split('|');
+      db.pagos.push({ id: uid('pago'), usuarioId, servicioId, periodo: periodoActual(), monto: Number(monto), fecha: new Date().toISOString(), estado: 'pagado' });
+      await persist();
+      showToast('Pago registrado.');
+      if (vistaActual === 'dashboard' || vistaActual === 'pagos') render();
+      ejecutarBusqueda();
+    });
+  });
+  searchResults.querySelectorAll('[data-unpay]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const [usuarioId, servicioId] = btn.dataset.unpay.split('|');
+      const periodo = periodoActual();
+      db.pagos = db.pagos.filter(p => !(p.usuarioId === usuarioId && p.servicioId === servicioId && p.periodo === periodo));
+      await persist();
+      showToast('Pago desmarcado.');
+      if (vistaActual === 'dashboard' || vistaActual === 'pagos') render();
+      ejecutarBusqueda();
+    });
+  });
+}
+
+buscadorGlobal.addEventListener('input', ejecutarBusqueda);
+buscadorGlobal.addEventListener('focus', () => { if (buscadorGlobal.value.trim()) ejecutarBusqueda(); });
+searchBackdrop.addEventListener('click', cerrarBusqueda);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarBusqueda(); });
+
+/* =========================================================
+   EXPORTAR
+========================================================= */
+document.getElementById('btnExport').addEventListener('click', () => {
+  const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'streaming-data.json';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+/* =========================================================
+   INIT
+========================================================= */
+async function init() {
+  document.getElementById('storageMode').textContent = STORAGE_DRIVER === 'jsonbin' ? 'JSONBin.io' : 'Local (navegador)';
+  actualizarReloj();
+  setInterval(actualizarReloj, 30000);
+  const loaded = await Storage.load();
+  if (loaded) db = Object.assign({ servicios: [], usuarios: [], pagos: [] }, loaded);
+  render();
+}
+init();
+</script>
+</body>
+</html>
