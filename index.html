@@ -242,6 +242,82 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: #1a56db
 .svc-assign-block .detalle { font-size: 12px; color: #666; margin-top: 4px; }
 .svc-assign-block .detalle span { display: inline-block; margin-right: 12px; }
 
+/* DISPARADOR VERTICAL: HISTORIAL DE PAGOS */
+.historial-trigger {
+  position: fixed;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  writing-mode: vertical-rl;
+  transform-origin: center;
+  background: #1a1a1a;
+  color: #fff;
+  border: none;
+  border-radius: 6px 0 0 6px;
+  padding: 16px 8px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  cursor: pointer;
+  z-index: 500;
+  display: none;
+  align-items: center;
+  gap: 6px;
+  transition: right .22s ease, background .15s;
+  box-shadow: -2px 0 6px rgba(0,0,0,.12);
+}
+.historial-trigger span { transform: rotate(180deg); display: inline-block; }
+.historial-trigger:hover { background: #333; }
+.historial-trigger.visible { display: inline-flex; }
+@media (max-width: 720px) { .historial-trigger { display: none !important; } }
+
+/* SIDEBAR DERECHO: HISTORIAL DE PAGOS DEL USUARIO */
+.sidebar-historial {
+  width: 280px;
+  min-width: 280px;
+  border-left: 1px solid #e8e8e8;
+  background: #fafafa;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+.sidebar-historial.hidden { display: none; }
+.sh-header { padding: 14px 16px; border-bottom: 1px solid #e8e8e8; display: flex; align-items: center; justify-content: space-between; }
+.sh-header .sh-title { font-size: 13px; font-weight: 700; }
+.sh-header .sh-sub { font-size: 11px; color: #999; margin-top: 2px; }
+.sh-close { background: none; border: none; font-size: 16px; color: #999; cursor: pointer; }
+.sh-close:hover { color: #1a1a1a; }
+.sh-list { flex: 1; overflow-y: auto; padding: 10px 12px; }
+.sh-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; border-radius: 6px; background: #fff; border: 1px solid #eee; margin-bottom: 8px; }
+.sh-item.sh-current { border-color: #1a56db; background: #eef2fd; }
+.sh-item-main { display: flex; flex-direction: column; gap: 2px; }
+.sh-item-label { font-size: 12.5px; font-weight: 600; color: #1a1a1a; text-transform: capitalize; }
+.sh-current-tag { font-size: 10px; color: #1a56db; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
+.sh-item-monto { font-size: 11px; color: #999; }
+.sh-empty { padding: 24px 12px; color: #999; font-size: 12px; text-align: center; }
+@media (max-width: 720px) {
+  .sidebar-historial { display: none !important; }
+}
+
+/* Acordeón de servicios y accesos (dashboard de usuario) */
+.svc-acc-list { display: flex; flex-direction: column; gap: 10px; }
+.svc-acc-item { border: 1px solid #e5e5e5; border-radius: 8px; background: #fff; overflow: hidden; }
+.svc-acc-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; cursor: pointer; background: #fafafa; transition: background .15s; }
+.svc-acc-header:hover { background: #eef2fb; }
+.svc-acc-title { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.svc-badge { display: inline-block; background: #1a1a1a; color: #fff; padding: 4px 11px; border-radius: 5px; font-size: 12.5px; font-weight: 600; }
+.svc-acc-sub { font-size: 12px; color: #888; }
+.svc-acc-caret { color: #999; font-size: 11px; transition: transform .18s; flex-shrink: 0; }
+.svc-acc-item.expanded .svc-acc-caret { transform: rotate(180deg); }
+.svc-acc-body { max-height: 0; overflow: hidden; transition: max-height .22s ease; border-top: 1px solid transparent; }
+.svc-acc-item.expanded .svc-acc-body { max-height: 600px; border-top-color: #eee; }
+.svc-kv { display: flex; flex-direction: column; padding: 4px 16px 10px; }
+.svc-kv-row { display: flex; align-items: baseline; gap: 14px; padding: 10px 0; border-bottom: 1px solid #f4f4f4; }
+.svc-kv-row:last-child { border-bottom: none; }
+.svc-kv-label { flex: 0 0 160px; font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: #999; font-weight: 700; }
+.svc-kv-value { flex: 1; font-size: 13.5px; color: #1a1a1a; font-weight: 500; word-break: break-word; }
+.svc-kv-value.muted { color: #b3b3b3; font-weight: 400; font-style: italic; }
+
 .placeholder-msg { padding: 50px 20px; text-align: center; color: #999; }
 .toast { position: fixed; bottom: 20px; right: 20px; background: #1a1a1a; color: #fff; padding: 10px 18px; border-radius: 6px; font-size: 13px; z-index: 2000; opacity: 0; transform: translateY(10px); transition: all .2s; pointer-events: none; }
 .toast.show { opacity: 1; transform: translateY(0); }
@@ -316,10 +392,26 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: #1a56db
     </aside>
 
     <main class="main" id="main"></main>
+
+    <!-- SIDEBAR DERECHO: HISTORIAL DE PAGOS (solo vista Usuarios) -->
+    <aside class="sidebar-historial hidden" id="sidebarHistorial">
+      <div class="sh-header">
+        <div>
+          <div class="sh-title">Historial de pagos</div>
+          <div class="sh-sub" id="shSub">-</div>
+        </div>
+        <button class="sh-close" id="shCloseBtn" title="Cerrar">✕</button>
+      </div>
+      <div class="sh-list" id="shList"></div>
+    </aside>
   </div>
 </div>
 
 <div class="toast" id="toast"></div>
+
+<button class="historial-trigger" id="historialTrigger" title="Historial de pagos">
+  <span>Historial</span>
+</button>
 
 <!-- MODAL SERVICIO (con gestor de grupos internos y cantidad común) -->
 <div class="modal-overlay" id="modalServicio">
@@ -414,43 +506,25 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: #1a56db
 <!-- MODAL ASIGNACIÓN DE SERVICIO A USUARIO (incluye selector de grupo interno) -->
 <div class="modal-overlay" id="modalAsignacion">
   <div class="modal-content">
-    <h3>Datos de acceso del servicio</h3>
-    <div class="form-row">
-      <label>Tipo de acceso</label>
-      <select id="asigTipo">
-        <option value="compartido">Compartido (cuenta grupal)</option>
-        <option value="individual">Individual</option>
-      </select>
-    </div>
-    <div class="form-row">
-      <label>Grupo interno (cuenta)</label>
-      <select id="asigGrupoInterno">
-        <option value="">— Seleccionar grupo —</option>
-      </select>
-      <div class="hint">Selecciona a qué grupo de cuentas pertenece este usuario dentro del servicio.</div>
-    </div>
-    <div class="form-grid2">
+    <h3 id="tituloModalAsignacion">Datos de acceso del servicio</h3>
+
+    <div class="modal-section" style="border-top:none;margin-top:0;padding-top:0;">
       <div class="form-row">
-        <label>Usuario / correo de acceso</label>
-        <input type="text" id="asigUsuarioAcceso" />
+        <label>Grupo (cuenta)</label>
+        <select id="asigGrupoInterno"></select>
+        <div class="hint" id="asigGrupoHint">Selecciona a qué grupo de cuentas pertenece este usuario dentro del servicio.</div>
       </div>
-      <div class="form-row">
-        <label>Contraseña</label>
-        <input type="text" id="asigPassword" />
+      <div class="form-row" style="margin-bottom:0;">
+        <label>Precio mensual acordado</label>
+        <input type="number" id="asigPrecio" min="0" step="0.01" />
+        <div class="hint">Por defecto toma el precio del servicio, puedes ajustarlo (descuento).</div>
       </div>
-    </div>
-    <div class="form-row">
-      <label>Dispositivo(s)</label>
-      <input type="text" id="asigDispositivo" />
-    </div>
-    <div class="form-row">
-      <label>Precio mensual acordado</label>
-      <input type="number" id="asigPrecio" min="0" step="0.01" />
-      <div class="hint">Por defecto toma el precio del servicio, puedes ajustarlo (descuento).</div>
     </div>
 
-    <!-- Campos personalizados del servicio -->
-    <div id="asigCamposPersonalizados"></div>
+    <div class="modal-section" id="asigCamposSection">
+      <div class="modal-section-title">Campos personalizados</div>
+      <div id="asigCamposPersonalizados"></div>
+    </div>
 
     <div class="modal-actions">
       <button class="btn btn-outline" id="cancelAsignacion">Cancelar</button>
@@ -491,6 +565,7 @@ let servicioSeleccionadoId = null;
 let grupoInternoSeleccionadoId = null;
 let sidebarGruposVisible = false;
 let usuarioSeleccionadoId = null;
+let historialPagosVisible = false;
 let asignacionesTemp = [];
 let asignacionEditIndex = null;
 
@@ -611,7 +686,7 @@ document.querySelectorAll('#navMain .nav-item').forEach(el => {
       servicioSeleccionadoId = null;
       grupoInternoSeleccionadoId = null;
     }
-    if (vistaActual !== 'usuarios') usuarioSeleccionadoId = null;
+    if (vistaActual !== 'usuarios') { usuarioSeleccionadoId = null; historialPagosVisible = false; }
     render();
   });
 });
@@ -622,6 +697,18 @@ function render() {
   else if (vistaActual === 'servicios') renderServicios();
   else if (vistaActual === 'usuarios') renderUsuarios();
   else if (vistaActual === 'pagos') renderPagos();
+}
+
+function irAUsuario(usuarioId) {
+  vistaActual = 'usuarios';
+  usuarioSeleccionadoId = usuarioId;
+  document.querySelectorAll('#navMain .nav-item').forEach(x => x.classList.remove('active'));
+  const navItem = document.querySelector('#navMain [data-vista="usuarios"]');
+  if (navItem) navItem.classList.add('active');
+  servicioSeleccionadoId = null;
+  grupoInternoSeleccionadoId = null;
+  sidebarGruposVisible = false;
+  render();
 }
 
 /* =========================================================
@@ -658,6 +745,9 @@ function renderSidebars() {
   } else {
     sbGrupos.classList.add('hidden');
   }
+
+  const sbHistorial = document.getElementById('sidebarHistorial');
+  const historialTrigger = document.getElementById('historialTrigger');
 
   if (vistaActual === 'servicios') {
     ssTitle.textContent = 'Servicios';
@@ -719,8 +809,8 @@ function renderSidebars() {
       }
       ssList.innerHTML = db.usuarios.map(u => `
         <div class="ss-item ${u.id === usuarioSeleccionadoId ? 'active' : ''}" data-sel="${u.id}">
-          <span class="ss-item-title">${u.nombre}</span>
-          <span class="ss-item-sub">Día ${u.diaPago} · ${u.servicios.length} servicio(s)</span>
+          <div class="ss-item-title">${u.nombre}</div>
+          <div class="ss-item-sub">Día ${u.diaPago} · ${u.servicios.length} servicio(s)</div>
         </div>
       `).join('');
       ssList.querySelectorAll('[data-sel]').forEach(el => el.addEventListener('click', () => {
@@ -728,6 +818,22 @@ function renderSidebars() {
         renderSidebars();
         renderUsuarios();
       }));
+    }
+  }
+
+  const hayUsuarioSeleccionado = usuarioSeleccionadoId !== null && db.usuarios.some(u => u.id === usuarioSeleccionadoId);
+  if (vistaActual !== 'usuarios' || !hayUsuarioSeleccionado) {
+    historialPagosVisible = false;
+  }
+  if (vistaActual === 'usuarios' && hayUsuarioSeleccionado && historialPagosVisible) {
+    sbHistorial.classList.remove('hidden');
+    historialTrigger.classList.remove('visible');
+  } else {
+    sbHistorial.classList.add('hidden');
+    if (vistaActual === 'usuarios' && hayUsuarioSeleccionado) {
+      historialTrigger.classList.add('visible');
+    } else {
+      historialTrigger.classList.remove('visible');
     }
   }
 }
@@ -843,7 +949,7 @@ function renderDashboard() {
       <tbody>
         ${proximos.length === 0 ? `<tr class="empty-row"><td colspan="5">No hay usuarios registrados.</td></tr>` :
           proximos.map(({ u, dias }) => `
-            <tr>
+            <tr class="fila-usuario" data-user-row="${u.id}" style="cursor:pointer;">
               <td>${u.nombre}</td>
               <td>${u.telefono || '-'}</td>
               <td>Día ${u.diaPago}</td>
@@ -854,6 +960,9 @@ function renderDashboard() {
       </tbody>
     </table>
   `;
+  main.querySelectorAll('[data-user-row]').forEach(tr => {
+    tr.addEventListener('click', () => irAUsuario(tr.dataset.userRow));
+  });
 }
 
 /* =========================================================
@@ -939,7 +1048,7 @@ function renderServicios() {
           return usuariosDelServicio.map(u => {
             const a = u.servicios.find(x => x.servicioId === servicio.id);
             const grupo = grupos.find(g => g.id === a.grupoInternoId);
-            return `<tr><td>${u.nombre}</td><td>${u.telefono || '-'}</td><td>Día ${u.diaPago}</td><td>${grupo ? grupo.nombre : '—'}</td><td>${money(a.precio)}</td></tr>`;
+            return `<tr class="fila-usuario" data-user-row="${u.id}" style="cursor:pointer;"><td>${u.nombre}</td><td>${u.telefono || '-'}</td><td>Día ${u.diaPago}</td><td>${grupo ? grupo.nombre : '—'}</td><td>${money(a.precio)}</td></tr>`;
           }).join('');
         })()}
       </tbody>
@@ -955,6 +1064,9 @@ function renderServicios() {
       renderServicios();
     });
   });
+  main.querySelectorAll('[data-user-row]').forEach(tr => {
+    tr.addEventListener('click', () => irAUsuario(tr.dataset.userRow));
+  });
 }
 
 function renderDashboardGrupo(servicio, grupoId) {
@@ -963,8 +1075,9 @@ function renderDashboardGrupo(servicio, grupoId) {
 
   const usadas = cuentasUsadasEnGrupo(servicio.id, grupoId);
   const ingGrupo = ingresoGrupo(servicio.id, grupoId);
-  const costGrupo = costoGrupo(servicio.id, grupoId);
-  const ganGrupo = gananciaGrupo(servicio.id, grupoId);
+  const costoServicio = Number(servicio.costoMensual) || 0;
+  const ganGrupo = ingGrupo - costoServicio;
+  const pctGanancia = ingGrupo > 0 ? (ganGrupo / ingGrupo * 100) : 0;
   const usuariosDelGrupo = db.usuarios.filter(u => u.servicios.some(a => a.servicioId === servicio.id && a.grupoInternoId === grupoId));
 
   main.innerHTML = `
@@ -975,10 +1088,9 @@ function renderDashboardGrupo(servicio, grupoId) {
       </div>
     </div>
     <div class="grid-cards">
-      <div class="stat-card"><div class="n">${usadas}</div><div class="l">Cuentas usadas</div></div>
-      <div class="stat-card"><div class="n">${grupo.cantidadCuentas - usadas}</div><div class="l">Cuentas disponibles</div></div>
+      <div class="stat-card"><div class="n">${usadas}/${grupo.cantidadCuentas}</div><div class="l">Cuentas usadas/disponibles</div></div>
       <div class="stat-card good"><div class="n">${money(ingGrupo)}</div><div class="l">Ingreso mensual</div></div>
-      <div class="stat-card"><div class="n">${money(costGrupo)}</div><div class="l">Costo proporcional</div></div>
+      <div class="stat-card ${pctGanancia >= 0 ? 'good' : 'danger'}"><div class="n">${pctGanancia.toFixed(1)}%</div><div class="l">% Ganancia</div></div>
       <div class="stat-card ${ganGrupo >= 0 ? 'good' : 'danger'}"><div class="n">${money(ganGrupo)}</div><div class="l">Ganancia neta</div></div>
     </div>
 
@@ -989,11 +1101,14 @@ function renderDashboardGrupo(servicio, grupoId) {
         ${usuariosDelGrupo.length === 0 ? `<tr class="empty-row"><td colspan="4">Ningún usuario en este grupo.</td></tr>` :
           usuariosDelGrupo.map(u => {
             const a = u.servicios.find(x => x.servicioId === servicio.id);
-            return `<tr><td>${u.nombre}</td><td>${u.telefono || '-'}</td><td>Día ${u.diaPago}</td><td>${money(a.precio)}</td></tr>`;
+            return `<tr class="fila-usuario" data-user-row="${u.id}" style="cursor:pointer;"><td>${u.nombre}</td><td>${u.telefono || '-'}</td><td>Día ${u.diaPago}</td><td>${money(a.precio)}</td></tr>`;
           }).join('')}
       </tbody>
     </table>
   `;
+  main.querySelectorAll('[data-user-row]').forEach(tr => {
+    tr.addEventListener('click', () => irAUsuario(tr.dataset.userRow));
+  });
 }
 
 /* =========================================================
@@ -1216,32 +1331,99 @@ function renderUsuarios() {
       <div class="stat-card"><div class="n">${u.servicios.length}</div><div class="l">Servicios asociados</div></div>
     </div>
     <div class="page-title" style="font-size:15px; margin-bottom:10px;">Servicios y accesos</div>
-    <table>
-      <thead><tr><th>Servicio</th><th>Grupo</th><th>Tipo</th><th>Usuario acceso</th><th>Contraseña</th><th>Dispositivo</th><th>Precio</th><th>Campos</th></tr></thead>
-      <tbody>
-        ${u.servicios.map(a => {
+    <div class="svc-acc-list">
+      ${u.servicios.length === 0 ? `<div class="placeholder-msg" style="padding:20px;">Sin servicios asociados.</div>` :
+        u.servicios.map((a, idx) => {
           const svc = db.servicios.find(x => x.id === a.servicioId);
           const grupo = svc ? (svc.gruposInternos || []).find(g => g.id === a.grupoInternoId) : null;
-          const camposPersonalizados = a.valoresPersonalizados || {};
-          const camposStr = Object.entries(camposPersonalizados).map(([k,v]) => `${k}: ${v}`).join(', ');
+          const campos = a.valoresPersonalizados || {};
+          const camposFilas = Object.keys(campos).length > 0
+            ? Object.entries(campos).map(([k, v]) => `<div class="svc-kv-row"><span class="svc-kv-label">${k}</span><span class="svc-kv-value${v ? '' : ' muted'}">${v || 'Sin especificar'}</span></div>`).join('')
+            : `<div class="svc-kv-row"><span class="svc-kv-label">Campos</span><span class="svc-kv-value muted">Sin campos personalizados</span></div>`;
           return `
-            <tr>
-              <td>${svc ? svc.nombre : '?'}</td>
-              <td>${grupo ? grupo.nombre : '—'}</td>
-              <td>${a.tipo === 'individual' ? '<span class="badge badge-neutral">Individual</span>' : '<span class="badge badge-ok">Compartido</span>'}</td>
-              <td>${a.usuarioAcceso || '-'}</td>
-              <td>${a.password || '-'}</td>
-              <td>${a.dispositivo || '-'}</td>
-              <td>${money(a.precio)}</td>
-              <td>${camposStr || '-'}</td>
-            </tr>
+            <div class="svc-acc-item" data-svc-acc="${idx}">
+              <div class="svc-acc-header" data-svc-acc-toggle="${idx}">
+                <div class="svc-acc-title">
+                  <span class="svc-badge">${svc ? svc.nombre : '?'}</span>
+                  <span class="svc-acc-sub"><strong>${grupo ? grupo.nombre : 'Sin grupo asignado'}</strong> · <strong>${money(a.precio)}</strong>/mes</span>
+                </div>
+                <span class="svc-acc-caret">▾</span>
+              </div>
+              <div class="svc-acc-body">
+                <div class="svc-kv">
+                  <div class="svc-kv-row"><span class="svc-kv-label">Grupo</span><span class="svc-kv-value${grupo ? '' : ' muted'}">${grupo ? grupo.nombre : 'Sin grupo asignado'}</span></div>
+                  <div class="svc-kv-row"><span class="svc-kv-label">Precio mensual</span><span class="svc-kv-value">${money(a.precio)}</span></div>
+                  ${camposFilas}
+                </div>
+              </div>
+            </div>
           `;
         }).join('')}
-      </tbody>
-    </table>
+    </div>
   `;
   document.getElementById('btnEditarUsuario').addEventListener('click', () => abrirModalUsuario(u.id));
+  main.querySelectorAll('[data-svc-acc-toggle]').forEach(header => {
+    header.addEventListener('click', () => {
+      header.closest('.svc-acc-item').classList.toggle('expanded');
+    });
+  });
   document.getElementById('btnEliminarUsuario').addEventListener('click', () => eliminarUsuario(u.id));
+  renderHistorialSidebar(u);
+}
+
+/* =========================================================
+   HISTORIAL DE PAGOS (sidebar derecho, vista Usuarios)
+========================================================= */
+function generarPeriodosHistorial(u) {
+  const hoy = new Date();
+  const anioActual = hoy.getFullYear();
+  const mesActual = hoy.getMonth();
+  const periodos = [];
+  for (let mes = 0; mes <= 11; mes++) {
+    const d = new Date(anioActual, mes, 1);
+    const periodo = anioActual + '-' + String(mes + 1).padStart(2, '0');
+    const esFuturo = mes > mesActual;
+    const esActual = mes === mesActual;
+    let estado;
+    if (esFuturo || u.servicios.length === 0) {
+      estado = 'proximo';
+    } else {
+      const todosPagados = u.servicios.every(a => pagoRegistrado(u.id, a.servicioId, periodo));
+      estado = todosPagados ? 'pagado' : 'pendiente';
+    }
+    const monto = u.servicios.reduce((acc, a) => acc + (Number(a.precio) || 0), 0);
+    periodos.push({ periodo, label: d.toLocaleDateString('es-MX', { month: 'long', year: 'numeric' }), esActual, estado, monto });
+  }
+  return periodos;
+}
+
+function renderHistorialSidebar(u) {
+  const shSub = document.getElementById('shSub');
+  const shList = document.getElementById('shList');
+  if (!u) {
+    shSub.textContent = '-';
+    shList.innerHTML = `<div class="sh-empty">Selecciona un usuario.</div>`;
+    return;
+  }
+  shSub.textContent = u.nombre;
+  const periodos = generarPeriodosHistorial(u);
+  const badgeInfo = {
+    pagado: { clase: 'badge-ok', texto: 'Pagado' },
+    pendiente: { clase: 'badge-danger', texto: 'Pendiente' },
+    proximo: { clase: 'badge-neutral', texto: 'Próximo' }
+  };
+  shList.innerHTML = periodos.map(p => {
+    const b = badgeInfo[p.estado];
+    return `
+      <div class="sh-item ${p.esActual ? 'sh-current' : ''}">
+        <div class="sh-item-main">
+          <span class="sh-item-label">${p.label}</span>
+          ${p.esActual ? '<span class="sh-current-tag">Mes actual</span>' : `<span class="sh-item-monto">${money(p.monto)}</span>`}
+        </div>
+        <span class="badge ${b.clase}">${b.texto}</span>
+      </div>
+    `;
+  }).join('');
 }
 
 function abrirModalUsuario(id) {
@@ -1292,15 +1474,13 @@ function renderAsignacionesTemp() {
     return `
       <div class="svc-assign-block">
         <div class="top">
-          <strong>${svc ? svc.nombre : '?'} · ${grupo ? grupo.nombre : 'Sin grupo'} · ${a.tipo === 'individual' ? 'Individual' : 'Compartido'}</strong>
+          <strong>${svc ? svc.nombre : '?'} · ${grupo ? grupo.nombre : 'Sin grupo asignado'}</strong>
           <div>
             <button class="btn btn-outline btn-sm" data-editasig="${idx}">Editar acceso</button>
             <button class="remove-btn" data-delasig="${idx}">Quitar ✕</button>
           </div>
         </div>
         <div class="detalle">
-          <span>Usuario: ${a.usuarioAcceso || '-'}</span>
-          <span>Dispositivo: ${a.dispositivo || '-'}</span>
           <span>Precio: ${money(a.precio)}</span>
           ${camposStr ? `<span>Campos: ${camposStr}</span>` : ''}
         </div>
@@ -1308,7 +1488,7 @@ function renderAsignacionesTemp() {
     `;
   }).join('');
 
-  cont.querySelectorAll('[data-editasig]').forEach(b => b.addEventListener('click', () => abrirModalAsignacion(Number(b.dataset.editasig))));
+  cont.querySelectorAll('[data-editasig]').forEach(b => b.addEventListener('click', () => abrirModalAsignacion(Number(b.dataset.editasig), false)));
   cont.querySelectorAll('[data-delasig]').forEach(b => b.addEventListener('click', () => {
     asignacionesTemp.splice(Number(b.dataset.delasig), 1);
     renderAsignacionesTemp();
@@ -1325,44 +1505,59 @@ document.getElementById('selectAgregarServicio').addEventListener('change', func
   const nuevaAsignacion = {
     servicioId,
     grupoInternoId: grupoId,
-    tipo: 'compartido',
-    usuarioAcceso: '',
-    password: '',
-    dispositivo: '',
     precio: svc.precioMensual,
     valoresPersonalizados: {}
   };
   asignacionesTemp.push(nuevaAsignacion);
   renderAsignacionesTemp();
   poblarSelectServicios();
-  abrirModalAsignacion(asignacionesTemp.length - 1);
+  abrirModalAsignacion(asignacionesTemp.length - 1, true);
 });
 
-function abrirModalAsignacion(idx) {
+function abrirModalAsignacion(idx, esNueva) {
   asignacionEditIndex = idx;
   const a = asignacionesTemp[idx];
   const svc = db.servicios.find(x => x.id === a.servicioId);
-  document.getElementById('asigTipo').value = a.tipo || 'compartido';
-  document.getElementById('asigUsuarioAcceso').value = a.usuarioAcceso || '';
-  document.getElementById('asigPassword').value = a.password || '';
-  document.getElementById('asigDispositivo').value = a.dispositivo || '';
+
+  document.getElementById('tituloModalAsignacion').textContent = esNueva ? 'Agregar acceso — ' + (svc ? svc.nombre : '') : 'Editar acceso — ' + (svc ? svc.nombre : '');
   document.getElementById('asigPrecio').value = a.precio;
 
+  // Si el usuario ya existía en la BD y este servicio ya estaba asignado,
+  // su cupo actual ya se cuenta dentro de "usadas"; hay que devolvérselo
+  // para que no se descuente a sí mismo. Para usuarios/asignaciones nuevas
+  // (aún no guardadas) no hay ningún cupo real ocupado todavía.
+  let grupoOriginalEnDB = null;
+  if (editandoUsuarioId) {
+    const uOriginal = db.usuarios.find(x => x.id === editandoUsuarioId);
+    const asigOriginal = uOriginal ? uOriginal.servicios.find(s => s.servicioId === a.servicioId) : null;
+    if (asigOriginal) grupoOriginalEnDB = asigOriginal.grupoInternoId;
+  }
+
   const grupoSelect = document.getElementById('asigGrupoInterno');
+  const grupoHint = document.getElementById('asigGrupoHint');
   grupoSelect.innerHTML = '<option value="">— Seleccionar grupo —</option>';
-  if (svc && svc.gruposInternos) {
+  if (svc && svc.gruposInternos && svc.gruposInternos.length > 0) {
     svc.gruposInternos.forEach(g => {
+      const usadas = cuentasUsadasEnGrupo(svc.id, g.id);
+      const ocupadaPorEstaAsignacion = (grupoOriginalEnDB === g.id) ? 1 : 0;
+      const disponibles = Math.max(0, (Number(g.cantidadCuentas) || 0) - usadas + ocupadaPorEstaAsignacion);
       const opt = document.createElement('option');
       opt.value = g.id;
-      opt.textContent = g.nombre + ' (' + g.cantidadCuentas + ' cuentas)';
+      opt.textContent = g.nombre + ' — ' + disponibles + (disponibles === 1 ? ' cuenta disponible' : ' cuentas disponibles');
+      if (disponibles <= 0) opt.disabled = true;
       if (g.id === a.grupoInternoId) opt.selected = true;
       grupoSelect.appendChild(opt);
     });
+    grupoHint.textContent = 'Selecciona a qué grupo de cuentas pertenece este usuario dentro del servicio.';
+  } else {
+    grupoHint.textContent = 'Este servicio no tiene grupos internos configurados.';
   }
 
+  const seccionCampos = document.getElementById('asigCamposSection');
   const container = document.getElementById('asigCamposPersonalizados');
   container.innerHTML = '';
   if (svc && svc.camposPersonalizados && svc.camposPersonalizados.length > 0) {
+    seccionCampos.style.display = '';
     const valores = a.valoresPersonalizados || {};
     svc.camposPersonalizados.forEach(campo => {
       const div = document.createElement('div');
@@ -1373,6 +1568,8 @@ function abrirModalAsignacion(idx) {
       `;
       container.appendChild(div);
     });
+  } else {
+    seccionCampos.style.display = 'none';
   }
 
   document.getElementById('modalAsignacion').classList.add('active');
@@ -1384,11 +1581,10 @@ document.getElementById('cancelAsignacion').addEventListener('click', () => {
 
 document.getElementById('confirmAsignacion').addEventListener('click', () => {
   const a = asignacionesTemp[asignacionEditIndex];
-  a.tipo = document.getElementById('asigTipo').value;
-  a.grupoInternoId = document.getElementById('asigGrupoInterno').value || null;
-  a.usuarioAcceso = document.getElementById('asigUsuarioAcceso').value.trim();
-  a.password = document.getElementById('asigPassword').value;
-  a.dispositivo = document.getElementById('asigDispositivo').value.trim();
+  const grupoVal = document.getElementById('asigGrupoInterno').value;
+  const grupoOpt = document.querySelector('#asigGrupoInterno option:checked');
+  if (grupoVal && grupoOpt && grupoOpt.disabled) { showToast('Ese grupo ya no tiene cuentas disponibles.'); return; }
+  a.grupoInternoId = grupoVal || null;
   a.precio = Number(document.getElementById('asigPrecio').value) || 0;
 
   const camposInputs = document.querySelectorAll('#asigCamposPersonalizados .asig-campo-personalizado');
@@ -1470,7 +1666,7 @@ function renderPagos() {
       <tbody>
         ${filas.length === 0 ? `<tr class="empty-row"><td colspan="6">No hay usuarios con servicios asociados.</td></tr>` :
           filas.map(f => `
-            <tr>
+            <tr class="fila-usuario" data-user-row="${f.usuario.id}" style="cursor:pointer;">
               <td>${f.usuario.nombre}</td>
               <td>${f.servicio ? f.servicio.nombre : '?'}</td>
               <td>Día ${f.usuario.diaPago}</td>
@@ -1490,6 +1686,13 @@ function renderPagos() {
       </tbody>
     </table>
   `;
+
+  main.querySelectorAll('[data-user-row]').forEach(tr => {
+    tr.addEventListener('click', (e) => {
+      if (e.target.closest('button')) return;
+      irAUsuario(tr.dataset.userRow);
+    });
+  });
 
   main.querySelectorAll('[data-pay]').forEach(b => b.addEventListener('click', async () => {
     const [usuarioId, servicioId, monto] = b.dataset.pay.split('|');
@@ -1819,6 +2022,16 @@ buscadorGlobal.addEventListener('input', ejecutarBusqueda);
 buscadorGlobal.addEventListener('focus', () => { if (buscadorGlobal.value.trim()) ejecutarBusqueda(); });
 searchBackdrop.addEventListener('click', cerrarBusqueda);
 document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarBusqueda(); });
+
+document.getElementById('shCloseBtn').addEventListener('click', () => {
+  historialPagosVisible = false;
+  renderSidebars();
+});
+
+document.getElementById('historialTrigger').addEventListener('click', () => {
+  historialPagosVisible = !historialPagosVisible;
+  renderSidebars();
+});
 
 /* =========================================================
    EXPORTAR
