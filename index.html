@@ -441,6 +441,14 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: #1a56db
     <div class="modal-section">
       <div class="modal-section-title">Cuentas y grupos</div>
       <div class="form-row">
+        <label>Tipo de grupo</label>
+        <select id="svcTipoGrupo">
+          <option value="individual">Individual (cada grupo paga el costo completo)</option>
+          <option value="compartido">Compartido (el costo se reparte entre todos los grupos)</option>
+        </select>
+        <div class="hint" id="svcTipoGrupoHint">Individual: el costo fijo se multiplica por cada grupo.</div>
+      </div>
+      <div class="form-row">
         <label>Cuentas por grupo</label>
         <input type="number" id="svcCuentasPorGrupo" min="1" step="1" value="1" />
         <div class="hint">Todos los grupos comparten esta misma cantidad de cuentas.</div>
@@ -617,7 +625,11 @@ function totalCuentasServicio(servicio) {
 
 function costoTotalServicio(servicio) {
   const numGrupos = servicio.gruposInternos ? servicio.gruposInternos.length : 0;
-  return (Number(servicio.costoMensual) || 0) * numGrupos;
+  const costoMensual = Number(servicio.costoMensual) || 0;
+  if (servicio.tipoGrupo === 'compartido') {
+    return costoMensual;
+  }
+  return costoMensual * numGrupos;
 }
 
 function ingresoPorServicio(servicioId) {
@@ -651,7 +663,15 @@ function costoGrupo(servicioId, grupoId) {
 }
 
 function gananciaGrupo(servicioId, grupoId) {
-  return ingresoGrupo(servicioId, grupoId) - costoGrupo(servicioId, grupoId);
+  const servicio = db.servicios.find(s => s.id === servicioId);
+  if (!servicio) return ingresoGrupo(servicioId, grupoId);
+  const costoMensual = Number(servicio.costoMensual) || 0;
+  let costoAtribuido = costoMensual;
+  if (servicio.tipoGrupo === 'compartido') {
+    const numGrupos = servicio.gruposInternos ? servicio.gruposInternos.length : 0;
+    costoAtribuido = numGrupos > 0 ? costoMensual / numGrupos : 0;
+  }
+  return ingresoGrupo(servicioId, grupoId) - costoAtribuido;
 }
 
 function cuentasUsadasEnGrupo(servicioId, grupoId) {
@@ -1075,8 +1095,7 @@ function renderDashboardGrupo(servicio, grupoId) {
 
   const usadas = cuentasUsadasEnGrupo(servicio.id, grupoId);
   const ingGrupo = ingresoGrupo(servicio.id, grupoId);
-  const costoServicio = Number(servicio.costoMensual) || 0;
-  const ganGrupo = ingGrupo - costoServicio;
+  const ganGrupo = gananciaGrupo(servicio.id, grupoId);
   const pctGanancia = ingGrupo > 0 ? (ganGrupo / ingGrupo * 100) : 0;
   const usuariosDelGrupo = db.usuarios.filter(u => u.servicios.some(a => a.servicioId === servicio.id && a.grupoInternoId === grupoId));
 
@@ -1124,6 +1143,7 @@ function abrirModalServicio(id) {
     document.getElementById('svcNombre').value = s.nombre;
     document.getElementById('svcCosto').value = s.costoMensual;
     document.getElementById('svcPrecio').value = s.precioMensual;
+    document.getElementById('svcTipoGrupo').value = s.tipoGrupo === 'compartido' ? 'compartido' : 'individual';
     const grupos = s.gruposInternos || [];
     const cuentasPorGrupo = grupos.length > 0 ? (grupos[0].cantidadCuentas || 1) : 1;
     document.getElementById('svcCuentasPorGrupo').value = cuentasPorGrupo;
@@ -1133,11 +1153,21 @@ function abrirModalServicio(id) {
     document.getElementById('svcNombre').value = '';
     document.getElementById('svcCosto').value = '';
     document.getElementById('svcPrecio').value = '';
+    document.getElementById('svcTipoGrupo').value = 'individual';
     document.getElementById('svcCuentasPorGrupo').value = 1;
     renderGruposInternos([{ id: uid('gpo'), nombre: 'Grupo 1', cantidadCuentas: 1 }]);
     renderCamposPersonalizados([]);
   }
+  actualizarHintTipoGrupo();
   modal.classList.add('active');
+}
+
+function actualizarHintTipoGrupo() {
+  const tipo = document.getElementById('svcTipoGrupo').value;
+  const hint = document.getElementById('svcTipoGrupoHint');
+  hint.textContent = tipo === 'compartido'
+    ? 'Compartido: el costo fijo se reparte entre todos los grupos (no se multiplica).'
+    : 'Individual: el costo fijo se multiplica por cada grupo.';
 }
 
 function renderGruposInternos(grupos) {
@@ -1175,6 +1205,8 @@ function obtenerGruposInternosFromUI() {
   });
   return grupos;
 }
+
+document.getElementById('svcTipoGrupo').addEventListener('change', actualizarHintTipoGrupo);
 
 document.getElementById('btnAgregarGrupoInterno').addEventListener('click', () => {
   const grupos = obtenerGruposInternosFromUI();
@@ -1230,6 +1262,7 @@ document.getElementById('confirmServicio').addEventListener('click', async () =>
   const nombre = document.getElementById('svcNombre').value.trim();
   const costo = document.getElementById('svcCosto').value;
   const precio = document.getElementById('svcPrecio').value;
+  const tipoGrupo = document.getElementById('svcTipoGrupo').value === 'compartido' ? 'compartido' : 'individual';
   const cuentasPorGrupo = Number(document.getElementById('svcCuentasPorGrupo').value) || 1;
   if (!nombre || costo === '' || precio === '') {
     showToast('Nombre, costo fijo y precio son obligatorios.');
@@ -1251,6 +1284,7 @@ document.getElementById('confirmServicio').addEventListener('click', async () =>
     s.nombre = nombre;
     s.costoMensual = Number(costo);
     s.precioMensual = Number(precio);
+    s.tipoGrupo = tipoGrupo;
     s.gruposInternos = grupos;
     s.camposPersonalizados = campos;
     db.usuarios.forEach(u => {
@@ -1272,6 +1306,7 @@ document.getElementById('confirmServicio').addEventListener('click', async () =>
       nombre,
       costoMensual: Number(costo),
       precioMensual: Number(precio),
+      tipoGrupo,
       gruposInternos: grupos,
       camposPersonalizados: campos
     };
