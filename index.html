@@ -35,11 +35,13 @@ body { font-family: 'DM Sans', sans-serif; background: #fff; color: #1a1a1a; fon
 .search-backdrop { position: fixed; top: 52px; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.15); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); z-index: 400; display: none; }
 .search-backdrop.active { display: block; }
 .search-results {
-  position: fixed; top: 52px; left: 0; bottom: 0; width: 80%; min-width: 320px;
-  background: #eef0f2; border-right: 1px solid #d5d8db;
-  box-shadow: 6px 0 24px rgba(0,0,0,.18); z-index: 401; overflow-y: auto; display: none;
+  position: fixed; top: 52px; left: 0; right: 0; width: 100%;
+  max-height: 0; overflow: hidden;
+  background: #eef0f2; border-bottom: 1px solid #d5d8db;
+  box-shadow: 0 6px 24px rgba(0,0,0,.18); z-index: 401;
+  transition: max-height .25s ease;
 }
-.search-results.active { display: block; }
+.search-results.active { max-height: 75vh; overflow-y: auto; }
 .sr-topbar { position: sticky; top: 0; background: #e4e7ea; border-bottom: 1px solid #d0d3d6; padding: 14px 24px; display: flex; justify-content: space-between; align-items: center; z-index: 2; }
 .sr-topbar .sr-count { font-size: 12px; color: #777; }
 .sr-close { background: none; border: none; font-size: 18px; color: #777; cursor: pointer; }
@@ -70,9 +72,17 @@ body { font-family: 'DM Sans', sans-serif; background: #fff; color: #1a1a1a; fon
 .sr-card table tbody tr:nth-child(even) { background: #fbfbfc; }
 .sr-card table td input, .sr-card table td select { padding: 4px 6px; font-size: 11.5px; border: 1px solid #ddd; width: 100%; font-family: inherit; text-align: left; }
 .sr-empty { padding: 30px 24px; color: #999; font-size: 13px; text-align: center; }
-@media (max-width: 720px) {
+.sr-collapse { border: 1px solid #d9dbde; border-radius: 4px; margin-top: 10px; background: #fff; }
+.sr-collapse summary { cursor: pointer; padding: 8px 12px; font-size: 12px; font-weight: 700; color: #555; list-style: none; }
+.sr-collapse summary::-webkit-details-marker { display: none; }
+.sr-collapse summary::before { content: "▸ "; }
+.sr-collapse[open] summary::before { content: "▾ "; }
+.sr-collapse table { margin-top: 0; border-top: 1px solid #eee; }
+.sr-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.sr-2col-box { max-height: 260px; overflow-y: auto; }
+@media (max-width: 720px) { .sr-2col { grid-template-columns: 1fr; } }
+@media (max-width: 820px) {
   .search-results { width: 100%; }
-  .topbar .search-slot { display: none; }
   .sr-card .sr-mini-grid { grid-template-columns: 1fr; }
 }
 
@@ -190,6 +200,8 @@ tbody tr:hover { background: #f0f4fb; }
 .badge-warn { background: #fdf0dc; color: #b45309; }
 .badge-danger { background: #fde3e3; color: #b91c1c; }
 .badge-neutral { background: #eee; color: #666; }
+.fila-urgente { background: #fef2f2 !important; }
+.fila-urgente:hover { background: #fde3e3 !important; }
 
 /* FORM */
 .form-row { margin-bottom: 14px; }
@@ -1386,8 +1398,7 @@ function renderUsuarios() {
               </div>
               <div class="svc-acc-body">
                 <div class="svc-kv">
-                  <div class="svc-kv-row"><span class="svc-kv-label">Grupo</span><span class="svc-kv-value${grupo ? '' : ' muted'}">${grupo ? grupo.nombre : 'Sin grupo asignado'}</span></div>
-                  <div class="svc-kv-row"><span class="svc-kv-label">Precio mensual</span><span class="svc-kv-value">${money(a.precio)}</span></div>
+                  <div class="svc-kv-row"><span class="svc-kv-label">Descuento mensual</span><span class="svc-kv-value" style="color:#157347;font-weight:700;">${money((svc ? svc.precioMensual : 0) - a.precio)}</span></div>
                   ${camposFilas}
                 </div>
               </div>
@@ -1672,77 +1683,121 @@ function eliminarUsuario(id) {
 }
 
 /* =========================================================
-   PAGOS Y ADEUDOS
+   PAGOS Y ADEUDOS (agrupado por usuario)
 ========================================================= */
+function diasHastaVencimiento(diaPago) {
+  const hoy = new Date();
+  const hoySinHora = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+  const venc = new Date(hoy.getFullYear(), hoy.getMonth(), Number(diaPago) || 1);
+  return Math.round((venc - hoySinHora) / 86400000); // negativo = vencido
+}
+
 function renderPagos() {
   const periodo = periodoActual();
-  const hoyDia = new Date().getDate();
-  let filas = [];
-  db.usuarios.forEach(u => {
-    u.servicios.forEach(s => {
-      const svc = db.servicios.find(x => x.id === s.servicioId);
-      const pago = pagoRegistrado(u.id, s.servicioId, periodo);
-      let estado = 'pendiente';
-      if (pago) estado = 'pagado';
-      else if (u.diaPago && hoyDia > Number(u.diaPago)) estado = 'vencido';
-      filas.push({ usuario: u, servicio: svc, asignacion: s, estado, pago });
-    });
-  });
+
+  const filas = db.usuarios
+    .filter(u => u.servicios.length > 0)
+    .map(u => {
+      const totalMonto = u.servicios.reduce((acc, a) => acc + (Number(a.precio) || 0), 0);
+      const pagadoCompleto = u.servicios.every(s => pagoRegistrado(u.id, s.servicioId, periodo));
+      const dias = diasHastaVencimiento(u.diaPago);
+      return { usuario: u, totalMonto, dias, pagadoCompleto, estado: dias < 0 ? 'vencido' : 'proximo' };
+    })
+    .filter(f => !f.pagadoCompleto && f.dias <= 7) // ventana: vencidos + próximos 7 días
+    .sort((a, b) => a.dias - b.dias);
+
+  const countVencidos = filas.filter(f => f.estado === 'vencido').length;
+  const countProximos = filas.length - countVencidos;
+  const totalAdeudado = filas.reduce((acc, f) => acc + f.totalMonto, 0);
+  const pagados = db.usuarios
+    .filter(u => u.servicios.length > 0 && u.servicios.every(s => pagoRegistrado(u.id, s.servicioId, periodo)))
+    .map(u => ({
+      usuario: u,
+      totalMonto: u.servicios.reduce((acc, a) => acc + (Number(a.precio) || 0), 0)
+    }))
+    .sort((a, b) => a.usuario.nombre.localeCompare(b.usuario.nombre));
 
   main.innerHTML = `
     <div class="page-header">
       <div>
         <div class="page-title">Pagos y adeudos</div>
-        <div class="page-sub">Periodo actual: ${periodo}</div>
+        <div class="page-sub">Periodo: ${periodo} · Vencidos y próximos 7 días (se recalcula cada mes)</div>
       </div>
     </div>
+    <div class="grid-cards">
+      <div class="stat-card danger"><div class="n">${countVencidos}</div><div class="l">Vencidos</div></div>
+      <div class="stat-card warn"><div class="n">${countProximos}</div><div class="l">Próximos 7 días</div></div>
+      <div class="stat-card danger"><div class="n">${money(totalAdeudado)}</div><div class="l">Total por cobrar</div></div>
+    </div>
     <table>
-      <thead><tr><th>Usuario</th><th>Servicio</th><th>Día pago</th><th>Monto</th><th>Estado</th><th>Acciones</th></tr></thead>
+      <thead><tr><th>Usuario</th><th>Servicios</th><th>Día pago</th><th>Vence</th><th>Monto</th><th>Estado</th><th>Acción</th></tr></thead>
       <tbody>
-        ${filas.length === 0 ? `<tr class="empty-row"><td colspan="6">No hay usuarios con servicios asociados.</td></tr>` :
+        ${filas.length === 0 ? `<tr class="empty-row"><td colspan="7">Sin adeudos ni cobros próximos.</td></tr>` :
           filas.map(f => `
-            <tr class="fila-usuario" data-user-row="${f.usuario.id}" style="cursor:pointer;">
+            <tr class="fila-usuario ${f.estado === 'vencido' ? 'fila-urgente' : ''}" data-user-row="${f.usuario.id}" style="cursor:pointer;">
               <td>${f.usuario.nombre}</td>
-              <td>${f.servicio ? f.servicio.nombre : '?'}</td>
+              <td>${f.usuario.servicios.length}</td>
               <td>Día ${f.usuario.diaPago}</td>
-              <td>${money(f.asignacion.precio)}</td>
-              <td>
-                ${f.estado === 'pagado' ? '<span class="badge badge-ok">Pagado</span>' :
-                  f.estado === 'vencido' ? '<span class="badge badge-danger">Vencido</span>' :
-                  '<span class="badge badge-warn">Pendiente</span>'}
-              </td>
-              <td class="tbl-actions">
-                ${f.estado === 'pagado'
-                  ? `<button class="btn btn-outline btn-sm" data-unpay="${f.usuario.id}|${f.servicio.id}">Desmarcar</button>`
-                  : `<button class="btn btn-primary btn-sm" data-pay="${f.usuario.id}|${f.servicio.id}|${f.asignacion.precio}">Marcar pagado</button>`}
-              </td>
+              <td>${f.dias < 0 ? `Hace ${Math.abs(f.dias)} día(s)` : f.dias === 0 ? 'Hoy' : `En ${f.dias} día(s)`}</td>
+              <td>${money(f.totalMonto)}</td>
+              <td>${f.estado === 'vencido' ? '<span class="badge badge-danger">Urgente</span>' : '<span class="badge badge-warn">Próximo</span>'}</td>
+              <td class="tbl-actions"><button class="btn btn-primary btn-sm" data-pay-all="${f.usuario.id}">Marcar pagado</button></td>
             </tr>
           `).join('')}
       </tbody>
     </table>
+    <div class="page-title" style="font-size:15px; margin:24px 0 10px; display:flex; align-items:center; gap:8px; cursor:pointer;" id="togglePagados">
+      <span id="pagadosCaret" style="font-size:11px; transition: transform .18s; display:inline-block;">▸</span>
+      Pagos realizados (${pagados.length})
+    </div>
+    <div id="tablaPagados" style="display:none;">
+      <table>
+        <thead><tr><th>Usuario</th><th>Servicios</th><th>Día pago</th><th>Monto</th><th>Estado</th></tr></thead>
+        <tbody>
+          ${pagados.length === 0 ? `<tr class="empty-row"><td colspan="5">Sin pagos realizados este periodo.</td></tr>` :
+            pagados.map(p => `
+              <tr class="fila-usuario" data-user-row-pagado="${p.usuario.id}" style="cursor:pointer;">
+                <td>${p.usuario.nombre}</td>
+                <td>${p.usuario.servicios.length}</td>
+                <td>Día ${p.usuario.diaPago}</td>
+                <td>${money(p.totalMonto)}</td>
+                <td><span class="badge badge-ok">Pagado</span></td>
+              </tr>
+            `).join('')}
+        </tbody>
+      </table>
+    </div>
   `;
 
   main.querySelectorAll('[data-user-row]').forEach(tr => {
-    tr.addEventListener('click', (e) => {
-      if (e.target.closest('button')) return;
-      irAUsuario(tr.dataset.userRow);
-    });
+    tr.addEventListener('click', e => { if (!e.target.closest('button')) irAUsuario(tr.dataset.userRow); });
   });
 
-  main.querySelectorAll('[data-pay]').forEach(b => b.addEventListener('click', async () => {
-    const [usuarioId, servicioId, monto] = b.dataset.pay.split('|');
-    db.pagos.push({ id: uid('pago'), usuarioId, servicioId, periodo, monto: Number(monto), fecha: new Date().toISOString(), estado: 'pagado' });
+  main.querySelectorAll('[data-pay-all]').forEach(b => b.addEventListener('click', async e => {
+    e.stopPropagation();
+    const u = db.usuarios.find(x => x.id === b.dataset.payAll);
+    if (!u) return;
+    u.servicios.forEach(s => {
+      if (!pagoRegistrado(u.id, s.servicioId, periodo)) {
+        db.pagos.push({ id: uid('pago'), usuarioId: u.id, servicioId: s.servicioId, periodo, monto: Number(s.precio) || 0, fecha: new Date().toISOString(), estado: 'pagado' });
+      }
+    });
     await persist();
     renderPagos();
     showToast('Pago registrado.');
   }));
-  main.querySelectorAll('[data-unpay]').forEach(b => b.addEventListener('click', async () => {
-    const [usuarioId, servicioId] = b.dataset.unpay.split('|');
-    db.pagos = db.pagos.filter(p => !(p.usuarioId === usuarioId && p.servicioId === servicioId && p.periodo === periodo));
-    await persist();
-    renderPagos();
-    showToast('Pago desmarcado.');
-  }));
+
+  document.getElementById('togglePagados').addEventListener('click', () => {
+    const tabla = document.getElementById('tablaPagados');
+    const caret = document.getElementById('pagadosCaret');
+    const visible = tabla.style.display !== 'none';
+    tabla.style.display = visible ? 'none' : 'block';
+    caret.style.transform = visible ? 'rotate(0deg)' : 'rotate(90deg)';
+  });
+
+  main.querySelectorAll('[data-user-row-pagado]').forEach(tr => {
+    tr.addEventListener('click', () => irAUsuario(tr.dataset.userRowPagado));
+  });
 }
 
 /* =========================================================
@@ -1849,6 +1904,13 @@ function tarjetaUsuarioRapida(u) {
     else pendientes++;
   });
 
+  // Unión de campos personalizados de todos los servicios del usuario
+  const camposUnion = [];
+  u.servicios.forEach(a => {
+    const svc = db.servicios.find(x => x.id === a.servicioId);
+    (svc?.camposPersonalizados || []).forEach(c => { if (!camposUnion.includes(c)) camposUnion.push(c); });
+  });
+
   return `
     <div class="sr-card" data-usuario-card="${u.id}">
       <div class="sr-card-head">
@@ -1869,89 +1931,88 @@ function tarjetaUsuarioRapida(u) {
         <div class="sr-field"><label>Teléfono</label><input type="text" data-usr-field="telefono" value="${u.telefono || ''}" /></div>
         <div class="sr-field"><label>Día de pago</label><input type="number" min="1" max="31" data-usr-field="diaPago" value="${u.diaPago}" /></div>
       </div>
+
       ${u.servicios.length > 0 ? `
-        <table data-usr-servicios-tabla="${u.id}">
-          <thead><tr><th>Servicio</th><th>Grupo</th><th>Tipo</th><th>Usuario acceso</th><th>Contraseña</th><th>Dispositivo</th><th>Precio</th><th>Campos</th></tr></thead>
-          <tbody>
-            ${u.servicios.map((a, idx) => {
-              const svc = db.servicios.find(x => x.id === a.servicioId);
-              const grupo = svc ? (svc.gruposInternos || []).find(g => g.id === a.grupoInternoId) : null;
-              const camposPersonalizados = a.valoresPersonalizados || {};
-              return `
-                <tr data-asig-idx="${idx}">
-                  <td>${svc ? svc.nombre : '?'}</td>
-                  <td>
-                    <select data-asig-field="grupoInternoId">
-                      <option value="">—</option>
-                      ${svc && svc.gruposInternos ? svc.gruposInternos.map(g => `<option value="${g.id}" ${a.grupoInternoId===g.id?'selected':''}>${g.nombre}</option>`).join('') : ''}
-                    </select>
-                  </td>
-                  <td>
-                    <select data-asig-field="tipo">
-                      <option value="compartido" ${a.tipo !== 'individual' ? 'selected' : ''}>Compartido</option>
-                      <option value="individual" ${a.tipo === 'individual' ? 'selected' : ''}>Individual</option>
-                    </select>
-                  </td>
-                  <td><input type="text" data-asig-field="usuarioAcceso" value="${a.usuarioAcceso || ''}" /></td>
-                  <td><input type="text" data-asig-field="password" value="${a.password || ''}" /></td>
-                  <td><input type="text" data-asig-field="dispositivo" value="${a.dispositivo || ''}" /></td>
-                  <td><input type="number" min="0" step="0.01" data-asig-field="precio" value="${a.precio}" /></td>
-                  <td>
-                    ${svc && svc.camposPersonalizados && svc.camposPersonalizados.length > 0
-                      ? svc.camposPersonalizados.map(campo => `
-                          <div style="margin-bottom:4px;">
-                            <label style="font-size:9px;color:#999;display:block;">${campo}</label>
-                            <input type="text" data-asig-campo="${campo}" value="${(camposPersonalizados[campo] || '')}" style="width:100%;" />
-                          </div>
-                        `).join('')
-                      : '<span style="color:#999;font-size:11px;">—</span>'}
-                  </td>
-                </tr>
-              `;
-            }).join('')}
-          </tbody>
-        </table>
+      <details class="sr-collapse" data-usr-servicios-tabla="${u.id}">
+        <summary>Accesos y credenciales (${u.servicios.length})</summary>
+        ${u.servicios.map((a, idx) => {
+          const svc = db.servicios.find(x => x.id === a.servicioId);
+          const camposPersonalizados = a.valoresPersonalizados || {};
+          const svcCampos = svc?.camposPersonalizados || [];
+          return `
+            <div style="padding:10px 12px; border-top:1px solid #eee;">
+              <div style="font-size:12px; font-weight:700; color:#555; margin-bottom:4px;">${svc ? svc.nombre : '?'}</div>
+              <table>
+                <thead><tr>
+                  <th>Grupo</th><th>Precio</th>
+                  ${svcCampos.map(c => `<th>${c}</th>`).join('')}
+                </tr></thead>
+                <tbody>
+                  <tr data-asig-idx="${idx}">
+                    <td>
+                      <select data-asig-field="grupoInternoId">
+                        <option value="">—</option>
+                        ${svc && svc.gruposInternos ? svc.gruposInternos.map(g => `<option value="${g.id}" ${a.grupoInternoId===g.id?'selected':''}>${g.nombre}</option>`).join('') : ''}
+                      </select>
+                    </td>
+                    <td><input type="number" min="0" step="0.01" data-asig-field="precio" value="${a.precio}" /></td>
+                    ${svcCampos.map(c => `<td><input type="text" data-asig-campo="${c}" value="${camposPersonalizados[c] || ''}" /></td>`).join('')}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          `;
+        }).join('')}
+      </details>
       ` : `<div style="font-size:11.5px; color:#999; margin-top:6px;">Sin servicios asociados.</div>`}
 
-      <div class="sr-subhead">Control de pagos · periodo ${periodo}</div>
       ${u.servicios.length > 0 ? `
-        <table>
-          <thead><tr><th>Servicio</th><th>Monto</th><th>Estado</th><th>Acción</th></tr></thead>
-          <tbody>
-            ${u.servicios.map(a => {
-              const svc = db.servicios.find(x => x.id === a.servicioId);
-              const pago = pagoRegistrado(u.id, a.servicioId, periodo);
-              let estado = pago ? 'pagado' : (u.diaPago && hoyDia > Number(u.diaPago) ? 'vencido' : 'pendiente');
-              const badge = estado === 'pagado' ? '<span class="badge badge-ok">Pagado</span>'
-                : estado === 'vencido' ? '<span class="badge badge-danger">Vencido</span>'
-                : '<span class="badge badge-warn">Pendiente</span>';
-              return `
-                <tr>
-                  <td>${svc ? svc.nombre : '?'}</td>
-                  <td>${money(a.precio)}</td>
-                  <td>${badge}</td>
-                  <td>${estado === 'pagado'
-                    ? `<button class="btn btn-outline btn-sm" data-unpay="${u.id}|${a.servicioId}">Desmarcar</button>`
-                    : `<button class="btn btn-primary btn-sm" data-pay="${u.id}|${a.servicioId}|${a.precio}">Marcar pagado</button>`}
-                  </td>
-                </tr>
-              `;
-            }).join('')}
-          </tbody>
-        </table>
-      ` : ''}
-
-      ${historial.length > 0 ? `
-        <div class="sr-subhead">Historial de pagos</div>
-        <table>
-          <thead><tr><th>Periodo</th><th>Servicio</th><th>Monto</th><th>Fecha</th></tr></thead>
-          <tbody>
-            ${historial.map(p => {
-              const svc = db.servicios.find(x => x.id === p.servicioId);
-              return `<tr><td>${p.periodo}</td><td>${svc ? svc.nombre : '?'}</td><td>${money(p.monto)}</td><td>${new Date(p.fecha).toLocaleDateString('es-MX')}</td></tr>`;
-            }).join('')}
-          </tbody>
-        </table>
+      <div class="sr-2col" style="margin-top:14px;">
+        <div>
+          <div class="sr-subhead">Control de pagos · ${periodo}</div>
+          <div class="sr-2col-box">
+            <table>
+              <thead><tr><th>Servicio</th><th>Monto</th><th>Estado</th><th>Acción</th></tr></thead>
+              <tbody>
+                ${u.servicios.map(a => {
+                  const svc = db.servicios.find(x => x.id === a.servicioId);
+                  const pago = pagoRegistrado(u.id, a.servicioId, periodo);
+                  let estado = pago ? 'pagado' : (u.diaPago && hoyDia > Number(u.diaPago) ? 'vencido' : 'pendiente');
+                  const badge = estado === 'pagado' ? '<span class="badge badge-ok">Pagado</span>'
+                    : estado === 'vencido' ? '<span class="badge badge-danger">Vencido</span>'
+                    : '<span class="badge badge-warn">Pendiente</span>';
+                  return `
+                    <tr>
+                      <td>${svc ? svc.nombre : '?'}</td>
+                      <td>${money(a.precio)}</td>
+                      <td>${badge}</td>
+                      <td>${estado === 'pagado'
+                        ? `<button class="btn btn-outline btn-sm" data-unpay="${u.id}|${a.servicioId}">Desmarcar</button>`
+                        : `<button class="btn btn-primary btn-sm" data-pay="${u.id}|${a.servicioId}|${a.precio}">Pagar</button>`}
+                      </td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div>
+          <div class="sr-subhead">Historial de pagos</div>
+          <div class="sr-2col-box">
+            ${historial.length === 0 ? `<div class="sr-empty" style="padding:14px;">Sin pagos aún.</div>` : `
+            <table>
+              <thead><tr><th>Periodo</th><th>Servicio</th><th>Monto</th><th>Fecha</th></tr></thead>
+              <tbody>
+                ${historial.map(p => {
+                  const svc = db.servicios.find(x => x.id === p.servicioId);
+                  return `<tr><td>${p.periodo}</td><td>${svc ? svc.nombre : '?'}</td><td>${money(p.monto)}</td><td>${new Date(p.fecha).toLocaleDateString('es-MX')}</td></tr>`;
+                }).join('')}
+              </tbody>
+            </table>`}
+          </div>
+        </div>
+      </div>
       ` : ''}
     </div>
   `;
