@@ -31,20 +31,26 @@ body { font-family: 'DM Sans', sans-serif; background: #fff; color: #1a1a1a; fon
 .topbar .search-input { width: 100%; max-width: 360px; padding: 7px 12px; border-radius: 6px; border: 1px solid #333; background: #1c1c1c; color: #fff; font-size: 13px; font-family: inherit; }
 .topbar .search-input::placeholder { color: #888; }
 .topbar .search-input:focus { outline: none; border-color: #1a56db; background: #222; }
-
+/* Buscador global
 .search-backdrop { position: fixed; top: 52px; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.15); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); z-index: 400; display: none; }
 .search-backdrop.active { display: block; }
 .search-results {
-  position: fixed; top: 52px; left: 0; right: 0; width: 100%;
-  max-height: 0; overflow: hidden;
-  background: #eef0f2; border-bottom: 1px solid #d5d8db;
-  box-shadow: 0 6px 24px rgba(0,0,0,.18); z-index: 401;
-  transition: max-height .25s ease;
+  position: fixed; top: 52px; left: 50%; width: 100%; max-width: 1000px;
+  transform: translateX(-50%) scale(.97);
+  max-height: 0; overflow: hidden; opacity: 0;
+  background: #eef0f2; border-radius: 0 0 10px 10px;
+  box-shadow: 0 16px 40px rgba(0,0,0,.22);
+  z-index: 401;
+  transition: max-height .25s ease, opacity .2s ease, transform .2s ease;
 }
-.search-results.active { max-height: 75vh; overflow-y: auto; }
-.sr-topbar { position: sticky; top: 0; background: #e4e7ea; border-bottom: 1px solid #d0d3d6; padding: 14px 24px; display: flex; justify-content: space-between; align-items: center; z-index: 2; }
+.search-results.active { max-height: 75vh; overflow-y: auto; opacity: 1; transform: translateX(-50%) scale(1); }
+
+.sr-topbar { position: sticky; top: 0; background: #e4e7ea; border-bottom: 1px solid #d0d3d6; padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; gap: 10px; z-index: 2; }
+.sr-topbar .sr-titulo { font-size: 13.5px; font-weight: 700; }
+.sr-topbar .sr-mini-stats { display: flex; gap: 12px; font-size: 11px; color: #666; }
+.sr-topbar .sr-mini-stats b { color: #1a1a1a; }
 .sr-topbar .sr-count { font-size: 12px; color: #777; }
-.sr-close { background: none; border: none; font-size: 18px; color: #777; cursor: pointer; }
+.sr-close { background: none; border: none; font-size: 16px; color: #777; cursor: pointer; flex-shrink: 0; }
 .sr-close:hover { color: #1a1a1a; }
 .sr-group { padding: 16px 24px 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: #888; font-weight: 700; }
 .sr-card { margin: 0 24px 18px; border: 1px solid #d9dbde; background: #fbfbfc; padding: 16px 18px; border-radius: 4px; }
@@ -84,6 +90,77 @@ body { font-family: 'DM Sans', sans-serif; background: #fff; color: #1a1a1a; fon
 @media (max-width: 820px) {
   .search-results { width: 100%; }
   .sr-card .sr-mini-grid { grid-template-columns: 1fr; }
+}*/
+/* =========================================================
+   BUSCADOR GLOBAL — ESTILOS
+========================================================= */
+.search-backdrop { position: fixed; top: 52px; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,.15); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); z-index: 400; display: none; }
+.search-backdrop.active { display: block; }
+
+.search-results {
+  position: fixed; top: 52px; left: 50%; width: 100%; max-width: 850px;
+  transform: translateX(-50%) scale(.97);
+  max-height: 0; overflow: hidden; opacity: 0;
+  background: #eef0f2; border-radius: 0 0 10px 10px;
+  box-shadow: 0 16px 40px rgba(0,0,0,.22);
+  z-index: 401;
+  transition: max-height .25s ease, opacity .2s ease, transform .2s ease;
+}
+.search-results.active { max-height: 75vh; overflow-y: auto; opacity: 1; transform: translateX(-50%) scale(1); }
+
+.sr-topbar { position: sticky; top: 0; background: #e4e7ea; border-bottom: 1px solid #d0d3d6; padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; gap: 10px; z-index: 2; }
+.sr-topbar .sr-titulo { font-size: 13.5px; font-weight: 700; }
+.sr-topbar .sr-mini-stats { display: flex; gap: 12px; font-size: 11px; color: #666; margin-top: 2px; }
+.sr-topbar .sr-mini-stats b { color: #1a1a1a; }
+.sr-topbar .sr-count { font-size: 12px; color: #777; }
+.sr-close { background: none; border: none; font-size: 16px; color: #777; cursor: pointer; flex-shrink: 0; }
+.sr-close:hover { color: #1a1a1a; }
+
+.sr-group { padding: 16px 18px 6px; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: #888; font-weight: 700; }
+.sr-card { margin: 0 18px 16px; border: 1px solid #d9dbde; background: #fbfbfc; padding: 16px 18px; border-radius: 6px; }
+.sr-card .sr-card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 10px; }
+.sr-card .sr-card-title { font-size: 15px; font-weight: 700; }
+.sr-stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 12px; }
+.sr-stat { background: #f1f2f4; border: 1px solid #dfe1e3; padding: 10px 12px; border-radius: 4px; }
+.sr-stat .n { font-size: 17px; font-weight: 700; color: #1a1a1a; }
+.sr-stat .l { font-size: 10px; color: #888; font-weight: 600; text-transform: uppercase; letter-spacing: .02em; margin-top: 2px; }
+.sr-stat.good { background: #eaf7ee; border-color: #cdebd6; }
+.sr-stat.good .n { color: #157347; }
+.sr-stat.warn { background: #fdf3e3; border-color: #f2ddb2; }
+.sr-stat.warn .n { color: #b45309; }
+.sr-stat.danger { background: #fbe9e9; border-color: #f0c4c4; }
+.sr-stat.danger .n { color: #b91c1c; }
+.sr-subhead { font-size: 11px; text-transform: uppercase; letter-spacing: .03em; color: #888; font-weight: 700; margin-top: 14px; margin-bottom: 4px; }
+.sr-card table { width: 100%; border-collapse: collapse; margin-top: 8px; background: #fff; }
+.sr-card table th { text-align: center; font-size: 10px; text-transform: uppercase; color: #999; padding: 7px 8px; border-bottom: 2px solid #eee; }
+.sr-card table th:first-child { text-align: left; }
+.sr-card table td { padding: 7px 8px; font-size: 12px; border-bottom: 1px solid #f2f2f2; text-align: center; }
+.sr-card table td:first-child { text-align: left; }
+.sr-card table tbody tr:nth-child(even) { background: #fbfbfc; }
+.sr-empty { padding: 30px 24px; color: #999; font-size: 13px; text-align: center; }
+
+/* Bloque de solo-lectura (clave/valor) reutilizado en el buscador */
+.svc-kv-row { display: flex; align-items: baseline; gap: 14px; padding: 8px 0; border-bottom: 1px solid #f4f4f4; }
+.svc-kv-row:last-child { border-bottom: none; }
+.svc-kv-label { flex: 0 0 150px; font-size: 10.5px; text-transform: uppercase; letter-spacing: .05em; color: #999; font-weight: 700; }
+.svc-kv-value { flex: 1; font-size: 13px; color: #1a1a1a; font-weight: 500; word-break: break-word; }
+.svc-kv-value.muted { color: #b3b3b3; font-weight: 400; font-style: italic; }
+
+/* Colapsable de accesos/credenciales */
+.sr-collapse { border: 1px solid #d9dbde; border-radius: 4px; margin-top: 10px; background: #fff; }
+.sr-collapse summary { cursor: pointer; padding: 8px 12px; font-size: 12px; font-weight: 700; color: #555; list-style: none; }
+.sr-collapse summary::-webkit-details-marker { display: none; }
+.sr-collapse summary::before { content: "▸ "; }
+.sr-collapse[open] summary::before { content: "▾ "; }
+
+/* Grid de 2 columnas: control de pagos + historial */
+.sr-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.sr-2col-box { max-height: 260px; overflow-y: auto; }
+
+@media (max-width: 720px) {
+  .search-results { max-width: 100%; width: 100%; left: 0; transform: none; border-radius: 0 0 10px 10px; }
+  .search-results.active { transform: none; }
+  .sr-2col { grid-template-columns: 1fr; }
 }
 
 /* SIDEBAR PRINCIPAL */
@@ -469,6 +546,11 @@ input:focus, select:focus, textarea:focus { outline: none; border-color: #1a56db
         <label>Grupos internos</label>
         <div id="gruposInternosContainer"></div>
         <button class="btn btn-outline btn-sm" id="btnAgregarGrupoInterno" style="margin-top:8px;">+ Agregar grupo</button>
+      </div>
+      <div class="form-row" id="svcCampoGlobalRow" style="display:none; margin-top:14px; margin-bottom:0;">
+        <label>Campo global (opcional)</label>
+        <input type="text" id="svcCampoGlobalNombre" placeholder="Ej. Administrador de la cuenta" />
+        <div class="hint">Aplica a todo el servicio (no por grupo). El valor se edita después desde la tabla del dashboard.</div>
       </div>
     </div>
 
@@ -926,7 +1008,8 @@ function agregarGrupoInternoAlServicio() {
   servicio.gruposInternos.push({
     id: uid('gpo'),
     nombre: 'Grupo ' + n,
-    cantidadCuentas: cuentasPorGrupo
+    cantidadCuentas: cuentasPorGrupo,
+    campoGlobalValor: ''
   });
   persist().then(() => {
     renderSidebars();
@@ -1052,19 +1135,21 @@ function renderServicios() {
 
     <div class="page-title" style="font-size:15px; margin-bottom:10px;">Grupos internos</div>
     <table>
-      <thead><tr><th>Grupo</th><th>Cuentas totales</th><th>Cuentas usadas</th><th>Ingreso grupo</th><th>Ganancia grupo</th></tr></thead>
+      <thead><tr><th>Grupo</th><th>Cuentas totales</th><th>Cuentas usadas</th><th>Ingreso grupo</th><th>Ganancia grupo</th>${(servicio.tipoGrupo === 'compartido' && servicio.campoGlobal && servicio.campoGlobal.nombre) ? `<th>${servicio.campoGlobal.nombre}</th>` : ''}</tr></thead>
       <tbody>
-        ${grupos.length === 0 ? `<tr class="empty-row"><td colspan="5">Sin grupos. Agrégales desde el modal de edición.</td></tr>` :
+        ${grupos.length === 0 ? `<tr class="empty-row"><td colspan="${(servicio.tipoGrupo === 'compartido' && servicio.campoGlobal && servicio.campoGlobal.nombre) ? 6 : 5}">Sin grupos. Agrégales desde el modal de edición.</td></tr>` :
           grupos.map(g => {
             const usadas = cuentasUsadasEnGrupo(servicio.id, g.id);
             const ingGrupo = ingresoGrupo(servicio.id, g.id);
             const ganGrupo = gananciaGrupo(servicio.id, g.id);
+            const tieneCampoGlobal = servicio.tipoGrupo === 'compartido' && servicio.campoGlobal && servicio.campoGlobal.nombre;
             return `<tr class="grupo-clickable" data-grupo-row="${g.id}" style="cursor:pointer;">
               <td>${g.nombre}</td>
               <td>${g.cantidadCuentas}</td>
               <td>${usadas}</td>
               <td>${money(ingGrupo)}</td>
               <td class="${ganGrupo >= 0 ? 'good' : 'danger'}">${money(ganGrupo)}</td>
+              ${tieneCampoGlobal ? `<td><input type="text" data-campo-global-valor="${g.id}" value="${g.campoGlobalValor || ''}" style="width:100%;" /></td>` : ''}
             </tr>`;
           }).join('')}
       </tbody>
@@ -1090,7 +1175,8 @@ function renderServicios() {
   document.getElementById('btnEditarServicio').addEventListener('click', () => abrirModalServicio(servicio.id));
   document.getElementById('btnEliminarServicio').addEventListener('click', () => eliminarServicio(servicio.id));
   main.querySelectorAll('[data-grupo-row]').forEach(tr => {
-    tr.addEventListener('click', () => {
+    tr.addEventListener('click', (e) => {
+      if (e.target.closest('input')) return;
       grupoInternoSeleccionadoId = tr.dataset.grupoRow;
       renderSidebars();
       renderServicios();
@@ -1098,6 +1184,16 @@ function renderServicios() {
   });
   main.querySelectorAll('[data-user-row]').forEach(tr => {
     tr.addEventListener('click', () => irAUsuario(tr.dataset.userRow));
+  });
+  main.querySelectorAll('[data-campo-global-valor]').forEach(input => {
+    input.addEventListener('click', (e) => e.stopPropagation());
+    input.addEventListener('change', async () => {
+      const grupo = (servicio.gruposInternos || []).find(g => g.id === input.dataset.campoGlobalValor);
+      if (!grupo) return;
+      grupo.campoGlobalValor = input.value;
+      await persist();
+      showToast('Campo actualizado.');
+    });
   });
 }
 
@@ -1159,6 +1255,7 @@ function abrirModalServicio(id) {
     const grupos = s.gruposInternos || [];
     const cuentasPorGrupo = grupos.length > 0 ? (grupos[0].cantidadCuentas || 1) : 1;
     document.getElementById('svcCuentasPorGrupo').value = cuentasPorGrupo;
+    document.getElementById('svcCampoGlobalNombre').value = (s.campoGlobal && s.campoGlobal.nombre) || '';
     renderGruposInternos(grupos);
     renderCamposPersonalizados(s.camposPersonalizados || []);
   } else {
@@ -1167,6 +1264,7 @@ function abrirModalServicio(id) {
     document.getElementById('svcPrecio').value = '';
     document.getElementById('svcTipoGrupo').value = 'individual';
     document.getElementById('svcCuentasPorGrupo').value = 1;
+    document.getElementById('svcCampoGlobalNombre').value = '';
     renderGruposInternos([{ id: uid('gpo'), nombre: 'Grupo 1', cantidadCuentas: 1 }]);
     renderCamposPersonalizados([]);
   }
@@ -1180,6 +1278,7 @@ function actualizarHintTipoGrupo() {
   hint.textContent = tipo === 'compartido'
     ? 'Compartido: el costo fijo se reparte entre todos los grupos (no se multiplica).'
     : 'Individual: el costo fijo se multiplica por cada grupo.';
+  document.getElementById('svcCampoGlobalRow').style.display = tipo === 'compartido' ? '' : 'none';
 }
 
 function renderGruposInternos(grupos) {
@@ -1212,7 +1311,7 @@ function obtenerGruposInternosFromUI() {
   items.forEach(item => {
     const nombre = item.querySelector('[data-grupo-nombre]').value.trim() || 'Grupo';
     const id = item.dataset.grupoId || uid('gpo');
-    grupos.push({ id, nombre, cantidadCuentas: cuentasPorGrupo });
+    grupos.push({ id, nombre, cantidadCuentas: cuentasPorGrupo, campoGlobalValor: '' });
     item.dataset.grupoId = id;
   });
   return grupos;
@@ -1276,6 +1375,7 @@ document.getElementById('confirmServicio').addEventListener('click', async () =>
   const precio = document.getElementById('svcPrecio').value;
   const tipoGrupo = document.getElementById('svcTipoGrupo').value === 'compartido' ? 'compartido' : 'individual';
   const cuentasPorGrupo = Number(document.getElementById('svcCuentasPorGrupo').value) || 1;
+  const campoGlobalNombre = tipoGrupo === 'compartido' ? document.getElementById('svcCampoGlobalNombre').value.trim() : '';
   if (!nombre || costo === '' || precio === '') {
     showToast('Nombre, costo fijo y precio son obligatorios.');
     return;
@@ -1297,8 +1397,13 @@ document.getElementById('confirmServicio').addEventListener('click', async () =>
     s.costoMensual = Number(costo);
     s.precioMensual = Number(precio);
     s.tipoGrupo = tipoGrupo;
+    grupos.forEach(g => {
+      const existente = (s.gruposInternos || []).find(og => og.id === g.id);
+      g.campoGlobalValor = existente ? (existente.campoGlobalValor || '') : '';
+    });
     s.gruposInternos = grupos;
     s.camposPersonalizados = campos;
+    s.campoGlobal = campoGlobalNombre ? { nombre: campoGlobalNombre } : null;
     db.usuarios.forEach(u => {
       u.servicios.forEach(a => {
         if (a.servicioId === editandoServicioId) {
@@ -1320,7 +1425,8 @@ document.getElementById('confirmServicio').addEventListener('click', async () =>
       precioMensual: Number(precio),
       tipoGrupo,
       gruposInternos: grupos,
-      camposPersonalizados: campos
+      camposPersonalizados: campos,
+      campoGlobal: campoGlobalNombre ? { nombre: campoGlobalNombre } : null
     };
     db.servicios.push(newSvc);
   }
@@ -1814,15 +1920,43 @@ function cerrarBusqueda() {
 
 function ejecutarBusqueda() {
   const q = buscadorGlobal.value.trim().toLowerCase();
-  if (!q) { cerrarBusqueda(); return; }
+  if (!q || q.length < 2) { cerrarBusqueda(); return; }
 
   const svcs = db.servicios.filter(s => s.nombre.toLowerCase().includes(q));
-  const usrs = db.usuarios.filter(u => u.nombre.toLowerCase().includes(q) || (u.telefono || '').includes(q));
+  const usrs = db.usuarios.filter(u => u.nombre.toLowerCase().includes(q));
   const total = svcs.length + usrs.length;
+
+  let headerHtml;
+  if (total === 1) {
+    if (svcs.length === 1) {
+      const s = svcs[0];
+      const ingreso = ingresoPorServicio(s.id);
+      const ganancia = ingreso - costoTotalServicio(s);
+      headerHtml = `
+        <div>
+          <div class="sr-titulo">${s.nombre}</div>
+          <div class="sr-mini-stats"><span>Ingreso: <b>${money(ingreso)}</b></span><span>Ganancia: <b>${money(ganancia)}</b></span></div>
+        </div>
+        <button class="btn btn-outline btn-sm" data-svc-editar="${s.id}">Editar</button>
+      `;
+    } else {
+      const u = usrs[0];
+      const totalM = u.servicios.reduce((acc, a) => acc + (Number(a.precio) || 0), 0);
+      headerHtml = `
+        <div>
+          <div class="sr-titulo">${u.nombre}</div>
+          <div class="sr-mini-stats"><span>Total: <b>${money(totalM)}</b></span><span>Servicios: <b>${u.servicios.length}</b></span></div>
+        </div>
+        <button class="btn btn-outline btn-sm" data-usr-editar="${u.id}">Editar</button>
+      `;
+    }
+  } else {
+    headerHtml = `<div><strong>Resultados</strong> <span class="sr-count">${total} encontrado(s)</span></div>`;
+  }
 
   let html = `
     <div class="sr-topbar">
-      <div><strong>Resultados</strong> <span class="sr-count">${total} encontrado(s)</span></div>
+      ${headerHtml}
       <button class="sr-close" id="srCloseBtn">✕</button>
     </div>
   `;
@@ -1832,11 +1966,11 @@ function ejecutarBusqueda() {
   } else {
     if (svcs.length > 0) {
       html += `<div class="sr-group">Servicios (${svcs.length})</div>`;
-      svcs.forEach(s => { html += tarjetaServicioRapida(s); });
+      svcs.forEach(s => { html += tarjetaServicioRapida(s, total === 1); });
     }
     if (usrs.length > 0) {
       html += `<div class="sr-group">Usuarios (${usrs.length})</div>`;
-      usrs.forEach(u => { html += tarjetaUsuarioRapida(u); });
+      usrs.forEach(u => { html += tarjetaUsuarioRapida(u, total === 1); });
     }
   }
 
@@ -1847,7 +1981,8 @@ function ejecutarBusqueda() {
   searchResults.classList.add('active');
 }
 
-function tarjetaServicioRapida(s) {
+/* ---- Tarjeta de servicio (solo lectura) ---- */
+function tarjetaServicioRapida(s, ocultarTitulo) {
   const totalCuentas = totalCuentasServicio(s);
   const costoTotal = costoTotalServicio(s);
   const ingreso = ingresoPorServicio(s.id);
@@ -1855,25 +1990,23 @@ function tarjetaServicioRapida(s) {
 
   return `
     <div class="sr-card" data-servicio-card="${s.id}">
+      ${ocultarTitulo ? '' : `
       <div class="sr-card-head">
         <span class="sr-card-title">${s.nombre}</span>
-        <div class="tbl-actions">
-          <button class="btn btn-outline btn-sm" data-svc-save="${s.id}">Guardar</button>
-          <button class="btn btn-danger btn-sm" data-svc-del="${s.id}">Eliminar</button>
-        </div>
-      </div>
+        <button class="btn btn-outline btn-sm" data-svc-editar="${s.id}">Editar</button>
+      </div>`}
       <div class="sr-stats-row">
         <div class="sr-stat good"><div class="n">${money(ingreso)}</div><div class="l">Ingreso mensual</div></div>
         <div class="sr-stat ${ganancia >= 0 ? 'good' : 'danger'}"><div class="n">${money(ganancia)}</div><div class="l">Ganancia neta</div></div>
         <div class="sr-stat"><div class="n">${totalCuentas}</div><div class="l">Cuentas totales</div></div>
         <div class="sr-stat"><div class="n">${(s.gruposInternos || []).length}</div><div class="l">Grupos</div></div>
       </div>
-      <div class="sr-mini-grid">
-        <div class="sr-field"><label>Nombre</label><input type="text" data-svc-field="nombre" value="${s.nombre}" /></div>
-        <div class="sr-field"><label>Costo fijo mensual</label><input type="number" min="0" step="0.01" data-svc-field="costoMensual" value="${s.costoMensual}" /></div>
-        <div class="sr-field"><label>Precio por usuario</label><input type="number" min="0" step="0.01" data-svc-field="precioMensual" value="${s.precioMensual}" /></div>
-        <div class="sr-field"><label>Cuentas por grupo</label><input type="number" min="1" step="1" data-svc-field="cuentasPorGrupo" value="${(s.gruposInternos && s.gruposInternos.length > 0) ? s.gruposInternos[0].cantidadCuentas : 1}" /></div>
+      <div class="svc-kv" style="padding:0;">
+        <div class="svc-kv-row"><span class="svc-kv-label">Costo fijo mensual</span><span class="svc-kv-value">${money(s.costoMensual)}</span></div>
+        <div class="svc-kv-row"><span class="svc-kv-label">Precio por usuario</span><span class="svc-kv-value">${money(s.precioMensual)}</span></div>
+        <div class="svc-kv-row"><span class="svc-kv-label">Cuentas por grupo</span><span class="svc-kv-value">${(s.gruposInternos && s.gruposInternos.length > 0) ? s.gruposInternos[0].cantidadCuentas : 1}</span></div>
       </div>
+      ${ocultarTitulo ? '' : `
       <div style="margin-top:8px;">
         <div class="sr-subhead">Grupos internos</div>
         <div style="display:flex;flex-wrap:wrap;gap:6px;">
@@ -1885,12 +2018,13 @@ function tarjetaServicioRapida(s) {
             ${(s.camposPersonalizados || []).map(c => `<span class="badge badge-neutral">${c}</span>`).join('') || '<span style="font-size:12px;color:#999;">Sin campos</span>'}
           </div>
         </div>
-      </div>
+      </div>`}
     </div>
   `;
 }
 
-function tarjetaUsuarioRapida(u) {
+/* ---- Tarjeta de usuario (solo lectura) ---- */
+function tarjetaUsuarioRapida(u, ocultarTitulo) {
   const total = u.servicios.reduce((acc, a) => acc + (Number(a.precio) || 0), 0);
   const periodo = periodoActual();
   const hoyDia = new Date().getDate();
@@ -1904,95 +2038,69 @@ function tarjetaUsuarioRapida(u) {
     else pendientes++;
   });
 
-  // Unión de campos personalizados de todos los servicios del usuario
-  const camposUnion = [];
-  u.servicios.forEach(a => {
-    const svc = db.servicios.find(x => x.id === a.servicioId);
-    (svc?.camposPersonalizados || []).forEach(c => { if (!camposUnion.includes(c)) camposUnion.push(c); });
-  });
-
   return `
     <div class="sr-card" data-usuario-card="${u.id}">
+      ${ocultarTitulo ? '' : `
       <div class="sr-card-head">
         <span class="sr-card-title">${u.nombre}</span>
-        <div class="tbl-actions">
-          <button class="btn btn-outline btn-sm" data-usr-save="${u.id}">Guardar</button>
-          <button class="btn btn-danger btn-sm" data-usr-del="${u.id}">Eliminar</button>
-        </div>
-      </div>
+        <button class="btn btn-outline btn-sm" data-usr-editar="${u.id}">Editar</button>
+      </div>`}
       <div class="sr-stats-row">
         <div class="sr-stat good"><div class="n">${money(total)}</div><div class="l">Total mensual</div></div>
         <div class="sr-stat"><div class="n">${u.servicios.length}</div><div class="l">Servicios</div></div>
         <div class="sr-stat ${pagados > 0 ? 'good' : ''}"><div class="n">${pagados}</div><div class="l">Pagados</div></div>
         <div class="sr-stat ${vencidos > 0 ? 'danger' : (pendientes > 0 ? 'warn' : '')}"><div class="n">${vencidos + pendientes}</div><div class="l">Por cobrar</div></div>
       </div>
-      <div class="sr-mini-grid">
-        <div class="sr-field"><label>Nombre</label><input type="text" data-usr-field="nombre" value="${u.nombre}" /></div>
-        <div class="sr-field"><label>Teléfono</label><input type="text" data-usr-field="telefono" value="${u.telefono || ''}" /></div>
-        <div class="sr-field"><label>Día de pago</label><input type="number" min="1" max="31" data-usr-field="diaPago" value="${u.diaPago}" /></div>
+      <div class="svc-kv" style="padding:0;">
+        <div class="svc-kv-row"><span class="svc-kv-label">Teléfono</span><span class="svc-kv-value${u.telefono ? '' : ' muted'}">${u.telefono || 'Sin especificar'}</span></div>
+        <div class="svc-kv-row"><span class="svc-kv-label">Día de pago</span><span class="svc-kv-value">${u.diaPago}</span></div>
       </div>
 
       ${u.servicios.length > 0 ? `
       <details class="sr-collapse" data-usr-servicios-tabla="${u.id}">
         <summary>Accesos y credenciales (${u.servicios.length})</summary>
-        ${u.servicios.map((a, idx) => {
+        ${u.servicios.map((a) => {
           const svc = db.servicios.find(x => x.id === a.servicioId);
+          const grupo = svc ? (svc.gruposInternos || []).find(g => g.id === a.grupoInternoId) : null;
           const camposPersonalizados = a.valoresPersonalizados || {};
           const svcCampos = svc?.camposPersonalizados || [];
           return `
             <div style="padding:10px 12px; border-top:1px solid #eee;">
-              <div style="font-size:12px; font-weight:700; color:#555; margin-bottom:4px;">${svc ? svc.nombre : '?'}</div>
-              <table>
-                <thead><tr>
-                  <th>Grupo</th><th>Precio</th>
-                  ${svcCampos.map(c => `<th>${c}</th>`).join('')}
-                </tr></thead>
-                <tbody>
-                  <tr data-asig-idx="${idx}">
-                    <td>
-                      <select data-asig-field="grupoInternoId">
-                        <option value="">—</option>
-                        ${svc && svc.gruposInternos ? svc.gruposInternos.map(g => `<option value="${g.id}" ${a.grupoInternoId===g.id?'selected':''}>${g.nombre}</option>`).join('') : ''}
-                      </select>
-                    </td>
-                    <td><input type="number" min="0" step="0.01" data-asig-field="precio" value="${a.precio}" /></td>
-                    ${svcCampos.map(c => `<td><input type="text" data-asig-campo="${c}" value="${camposPersonalizados[c] || ''}" /></td>`).join('')}
-                  </tr>
-                </tbody>
-              </table>
+              <div style="font-size:12px; font-weight:700; color:#555; margin-bottom:6px;">${svc ? svc.nombre : '?'}</div>
+              <div class="svc-kv" style="padding:0;">
+                <div class="svc-kv-row"><span class="svc-kv-label">Grupo</span><span class="svc-kv-value">${grupo ? grupo.nombre : '—'}</span></div>
+                <div class="svc-kv-row"><span class="svc-kv-label">Precio</span><span class="svc-kv-value">${money(a.precio)}</span></div>
+                ${svcCampos.map(c => `<div class="svc-kv-row"><span class="svc-kv-label">${c}</span><span class="svc-kv-value${camposPersonalizados[c] ? '' : ' muted'}">${camposPersonalizados[c] || 'Sin especificar'}</span></div>`).join('')}
+              </div>
             </div>
           `;
         }).join('')}
+        <div style="padding:10px 12px; border-top:1px solid #eee;">
+          <button class="btn btn-outline btn-sm" data-usr-editar="${u.id}">Editar accesos</button>
+        </div>
       </details>
       ` : `<div style="font-size:11.5px; color:#999; margin-top:6px;">Sin servicios asociados.</div>`}
 
       ${u.servicios.length > 0 ? `
       <div class="sr-2col" style="margin-top:14px;">
         <div>
-          <div class="sr-subhead">Control de pagos · ${periodo}</div>
+          <div class="sr-subhead">Control de pagos</div>
           <div class="sr-2col-box">
             <table>
-              <thead><tr><th>Servicio</th><th>Monto</th><th>Estado</th><th>Acción</th></tr></thead>
+              <thead><tr><th>Periodo</th><th>Total</th><th>Estado</th><th>Acción</th></tr></thead>
               <tbody>
-                ${u.servicios.map(a => {
-                  const svc = db.servicios.find(x => x.id === a.servicioId);
-                  const pago = pagoRegistrado(u.id, a.servicioId, periodo);
-                  let estado = pago ? 'pagado' : (u.diaPago && hoyDia > Number(u.diaPago) ? 'vencido' : 'pendiente');
-                  const badge = estado === 'pagado' ? '<span class="badge badge-ok">Pagado</span>'
-                    : estado === 'vencido' ? '<span class="badge badge-danger">Vencido</span>'
-                    : '<span class="badge badge-warn">Pendiente</span>';
-                  return `
-                    <tr>
-                      <td>${svc ? svc.nombre : '?'}</td>
-                      <td>${money(a.precio)}</td>
-                      <td>${badge}</td>
-                      <td>${estado === 'pagado'
-                        ? `<button class="btn btn-outline btn-sm" data-unpay="${u.id}|${a.servicioId}">Desmarcar</button>`
-                        : `<button class="btn btn-primary btn-sm" data-pay="${u.id}|${a.servicioId}|${a.precio}">Pagar</button>`}
-                      </td>
-                    </tr>
-                  `;
-                }).join('')}
+                <tr>
+                  <td>${periodo}</td>
+                  <td>${money(total)}</td>
+                  <td>${pagados === u.servicios.length
+                    ? '<span class="badge badge-ok">Pagado</span>'
+                    : (vencidos > 0 ? '<span class="badge badge-danger">Vencido</span>' : '<span class="badge badge-warn">Pendiente</span>')}
+                  </td>
+                  <td>${pagados === u.servicios.length
+                    ? `<button class="btn btn-outline btn-sm" data-unpay-all="${u.id}">Desmarcar</button>`
+                    : `<button class="btn btn-primary btn-sm" data-pay-all="${u.id}">Marcar pagado</button>`}
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -2000,16 +2108,20 @@ function tarjetaUsuarioRapida(u) {
         <div>
           <div class="sr-subhead">Historial de pagos</div>
           <div class="sr-2col-box">
-            ${historial.length === 0 ? `<div class="sr-empty" style="padding:14px;">Sin pagos aún.</div>` : `
-            <table>
-              <thead><tr><th>Periodo</th><th>Servicio</th><th>Monto</th><th>Fecha</th></tr></thead>
-              <tbody>
-                ${historial.map(p => {
-                  const svc = db.servicios.find(x => x.id === p.servicioId);
-                  return `<tr><td>${p.periodo}</td><td>${svc ? svc.nombre : '?'}</td><td>${money(p.monto)}</td><td>${new Date(p.fecha).toLocaleDateString('es-MX')}</td></tr>`;
-                }).join('')}
-              </tbody>
-            </table>`}
+            ${(() => {
+              const porPeriodo = {};
+              historial.forEach(p => { porPeriodo[p.periodo] = (porPeriodo[p.periodo] || 0) + (Number(p.monto) || 0); });
+              const periodos = Object.keys(porPeriodo).sort((a, b) => b.localeCompare(a));
+              if (periodos.length === 0) return `<div class="sr-empty" style="padding:14px;">Sin pagos aún.</div>`;
+              return `
+                <table>
+                  <thead><tr><th>Periodo</th><th>Total pagado</th></tr></thead>
+                  <tbody>
+                    ${periodos.map(p => `<tr><td>${p}</td><td>${money(porPeriodo[p])}</td></tr>`).join('')}
+                  </tbody>
+                </table>
+              `;
+            })()}
           </div>
         </div>
       </div>
@@ -2018,94 +2130,51 @@ function tarjetaUsuarioRapida(u) {
   `;
 }
 
+/* ---- Eventos de las tarjetas del dropdown ---- */
 function enlazarTarjetasRapidas() {
-  searchResults.querySelectorAll('[data-svc-save]').forEach(btn => {
+  searchResults.querySelectorAll('[data-svc-editar]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      cerrarBusqueda();
+      buscadorGlobal.value = '';
+      vistaActual = 'servicios';
+      servicioSeleccionadoId = btn.dataset.svcEditar;
+      document.querySelectorAll('#navMain .nav-item').forEach(x => x.classList.remove('active'));
+      document.querySelector('#navMain [data-vista="servicios"]').classList.add('active');
+      render();
+    });
+  });
+
+  searchResults.querySelectorAll('[data-usr-editar]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      cerrarBusqueda();
+      buscadorGlobal.value = '';
+      irAUsuario(btn.dataset.usrEditar);
+    });
+  });
+
+  searchResults.querySelectorAll('[data-pay-all]').forEach(btn => {
     btn.addEventListener('click', async () => {
-      const id = btn.dataset.svcSave;
-      const s = db.servicios.find(x => x.id === id);
-      const card = searchResults.querySelector(`[data-servicio-card="${id}"]`);
-      let cuentasPorGrupo = 1;
-      card.querySelectorAll('[data-svc-field]').forEach(inp => {
-        const field = inp.dataset.svcField;
-        if (field === 'nombre') {
-          s[field] = inp.value.trim();
-        } else if (field === 'cuentasPorGrupo') {
-          cuentasPorGrupo = Number(inp.value) || 1;
-        } else {
-          s[field] = Number(inp.value);
+      const u = db.usuarios.find(x => x.id === btn.dataset.payAll);
+      if (!u) return;
+      const periodo = periodoActual();
+      u.servicios.forEach(s => {
+        if (!pagoRegistrado(u.id, s.servicioId, periodo)) {
+          db.pagos.push({ id: uid('pago'), usuarioId: u.id, servicioId: s.servicioId, periodo, monto: Number(s.precio) || 0, fecha: new Date().toISOString(), estado: 'pagado' });
         }
       });
-      if (s.gruposInternos) {
-        s.gruposInternos.forEach(g => g.cantidadCuentas = cuentasPorGrupo);
-      }
-      await persist();
-      showToast('Servicio actualizado.');
-      if (vistaActual === 'servicios' || vistaActual === 'dashboard' || vistaActual === 'pagos') render();
-      ejecutarBusqueda();
-    });
-  });
-  searchResults.querySelectorAll('[data-svc-del]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const id = btn.dataset.svcDel;
-      eliminarServicio(id);
-      setTimeout(ejecutarBusqueda, 0);
-    });
-  });
-  searchResults.querySelectorAll('[data-usr-save]').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const id = btn.dataset.usrSave;
-      const u = db.usuarios.find(x => x.id === id);
-      const card = searchResults.querySelector(`[data-usuario-card="${id}"]`);
-      card.querySelectorAll('[data-usr-field]').forEach(inp => {
-        const field = inp.dataset.usrField;
-        u[field] = (field === 'diaPago') ? Number(inp.value) : inp.value.trim();
-      });
-      card.querySelectorAll('tr[data-asig-idx]').forEach(tr => {
-        const idx = Number(tr.dataset.asigIdx);
-        tr.querySelectorAll('[data-asig-field]').forEach(inp => {
-          const field = inp.dataset.asigField;
-          if (field === 'grupoInternoId') {
-            u.servicios[idx][field] = inp.value || null;
-          } else if (field === 'precio') {
-            u.servicios[idx][field] = Number(inp.value);
-          } else {
-            u.servicios[idx][field] = inp.value;
-          }
-        });
-        tr.querySelectorAll('[data-asig-campo]').forEach(inp => {
-          const campo = inp.dataset.asigCampo;
-          if (!u.servicios[idx].valoresPersonalizados) u.servicios[idx].valoresPersonalizados = {};
-          u.servicios[idx].valoresPersonalizados[campo] = inp.value.trim();
-        });
-      });
-      await persist();
-      showToast('Usuario actualizado.');
-      if (vistaActual === 'usuarios' || vistaActual === 'dashboard' || vistaActual === 'pagos') render();
-      ejecutarBusqueda();
-    });
-  });
-  searchResults.querySelectorAll('[data-usr-del]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const id = btn.dataset.usrDel;
-      eliminarUsuario(id);
-      setTimeout(ejecutarBusqueda, 0);
-    });
-  });
-  searchResults.querySelectorAll('[data-pay]').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const [usuarioId, servicioId, monto] = btn.dataset.pay.split('|');
-      db.pagos.push({ id: uid('pago'), usuarioId, servicioId, periodo: periodoActual(), monto: Number(monto), fecha: new Date().toISOString(), estado: 'pagado' });
       await persist();
       showToast('Pago registrado.');
       if (vistaActual === 'dashboard' || vistaActual === 'pagos') render();
       ejecutarBusqueda();
     });
   });
-  searchResults.querySelectorAll('[data-unpay]').forEach(btn => {
+
+  searchResults.querySelectorAll('[data-unpay-all]').forEach(btn => {
     btn.addEventListener('click', async () => {
-      const [usuarioId, servicioId] = btn.dataset.unpay.split('|');
+      const u = db.usuarios.find(x => x.id === btn.dataset.unpayAll);
+      if (!u) return;
       const periodo = periodoActual();
-      db.pagos = db.pagos.filter(p => !(p.usuarioId === usuarioId && p.servicioId === servicioId && p.periodo === periodo));
+      db.pagos = db.pagos.filter(p => !(p.usuarioId === u.id && p.periodo === periodo));
       await persist();
       showToast('Pago desmarcado.');
       if (vistaActual === 'dashboard' || vistaActual === 'pagos') render();
@@ -2115,7 +2184,7 @@ function enlazarTarjetasRapidas() {
 }
 
 buscadorGlobal.addEventListener('input', ejecutarBusqueda);
-buscadorGlobal.addEventListener('focus', () => { if (buscadorGlobal.value.trim()) ejecutarBusqueda(); });
+buscadorGlobal.addEventListener('focus', () => { if (buscadorGlobal.value.trim().length >= 2) ejecutarBusqueda(); });
 searchBackdrop.addEventListener('click', cerrarBusqueda);
 document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarBusqueda(); });
 
