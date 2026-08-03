@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Gestión de Streaming</title>
+<link rel="icon" type="image/png" href="https://raw.githubusercontent.com/cdelgadoffs/CGD/37dfce32a3b2aa5775fc4723b6bd94bf1e14fd45/cdelgado.PNG" />
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+<div class="shell">
+  <div class="topbar">
+    <div class="logo-slot" id="logoSlot"><img src="https://raw.githubusercontent.com/cdelgadoffs/CGD/37dfce32a3b2aa5775fc4723b6bd94bf1e14fd45/cdelgado.PNG" alt="Logo" /></div>
+    <div class="search-slot">
+      <input type="text" class="search-input" id="buscadorGlobal" placeholder="Buscar servicio o usuario..." autocomplete="off" />
+    </div>
+    <div class="datetime">
+      <div class="fecha" id="topFecha">-</div>
+      <div class="hora" id="topHora">-</div>
+    </div>
+  </div>
+
+  <div class="search-backdrop" id="searchBackdrop"></div>
+  <div class="search-results" id="searchResults"></div>
+
+  <div class="body-shell">
+    <!-- SIDEBAR PRINCIPAL (SB1) -->
+    <aside class="sidebar">
+      <div class="sb-header">
+        <div class="sb-badge">Negocio</div>
+        <div class="sb-title">Streaming Manager</div>
+      </div>
+      <nav class="sb-nav" id="navMain">
+        <div class="nav-item active" data-vista="dashboard"><span class="nav-dot"></span> Panel administrativo</div>
+        <div class="nav-item" data-vista="servicios"><span class="nav-dot"></span> Servicios</div>
+        <div class="nav-item" data-vista="usuarios"><span class="nav-dot"></span> Usuarios</div>
+        <div class="nav-item" data-vista="pagos"><span class="nav-dot"></span> Pagos y adeudos</div>
+      </nav>
+      <div class="sb-footer">
+        Almacenamiento: <span id="storageMode">Local (navegador)</span>
+        <button id="btnExport">Exportar JSON</button>
+      </div>
+    </aside>
+
+    <!-- SIDEBAR 2: SERVICIOS (SB2) -->
+    <aside class="sidebar-secundario hidden" id="sidebarSecundario">
+      <div class="ss-header">
+        <div>
+          <div class="ss-title" id="ssTitle">Servicios</div>
+          <div class="ss-count" id="ssCount">0</div>
+        </div>
+        <button class="ss-add" id="ssAddBtn" title="Nuevo servicio">+</button>
+      </div>
+      <div class="ss-list" id="ssList"></div>
+    </aside>
+
+    <!-- SIDEBAR 3: GRUPOS INTERNOS (SB3) - solo visible cuando hay un servicio seleccionado -->
+    <aside class="sidebar-grupos hidden" id="sidebarGrupos">
+      <div class="sg-header">
+        <div class="sg-title">Grupos</div>
+        <button class="sg-add" id="sgAddBtn" title="Agregar grupo al servicio">+</button>
+      </div>
+      <div class="sg-list" id="sgList"></div>
+    </aside>
+
+    <main class="main" id="main"></main>
+
+    <!-- SIDEBAR DERECHO: HISTORIAL DE PAGOS (solo vista Usuarios) -->
+    <aside class="sidebar-historial hidden" id="sidebarHistorial">
+      <div class="sh-header">
+        <div>
+          <div class="sh-title">Historial de pagos</div>
+          <div class="sh-sub" id="shSub">-</div>
+        </div>
+        <button class="sh-close" id="shCloseBtn" title="Cerrar">✕</button>
+      </div>
+      <div class="sh-list" id="shList"></div>
+    </aside>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<button class="historial-trigger" id="historialTrigger" title="Historial de pagos">
+  <span>Historial</span>
+</button>
+
+<!-- MODAL SERVICIO (con gestor de grupos internos y cantidad común) -->
+<div class="modal-overlay" id="modalServicio">
+  <div class="modal-content modal-content-wide">
+    <h3 id="tituloModalServicio">Nuevo servicio</h3>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Datos básicos</div>
+      <div class="form-row">
+        <label>Nombre del servicio</label>
+        <input type="text" id="svcNombre" />
+      </div>
+      <div class="form-grid2">
+        <div class="form-row">
+          <label>Costo mensual fijo</label>
+          <input type="number" id="svcCosto" min="0" step="0.01" />
+          <div class="hint">Lo que pagas por el servicio completo (se multiplica por el número de grupos).</div>
+        </div>
+        <div class="form-row">
+          <label>Precio por usuario</label>
+          <input type="number" id="svcPrecio" min="0" step="0.01" />
+          <div class="hint">Precio mensual que le cobras a cada persona.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Cuentas y grupos</div>
+      <div class="form-row">
+        <label>Tipo de grupo</label>
+        <select id="svcTipoGrupo">
+          <option value="individual">Individual (cada grupo paga el costo completo)</option>
+          <option value="compartido">Compartido (el costo se reparte entre todos los grupos)</option>
+        </select>
+        <div class="hint" id="svcTipoGrupoHint">Individual: el costo fijo se multiplica por cada grupo.</div>
+      </div>
+      <div class="form-row">
+        <label>Cuentas por grupo</label>
+        <input type="number" id="svcCuentasPorGrupo" min="1" step="1" value="1" />
+        <div class="hint">Todos los grupos comparten esta misma cantidad de cuentas.</div>
+      </div>
+      <div class="form-row" style="margin-bottom:0;">
+        <label>Grupos internos</label>
+        <div id="gruposInternosContainer"></div>
+        <button class="btn btn-outline btn-sm" id="btnAgregarGrupoInterno" style="margin-top:8px;">+ Agregar grupo</button>
+      </div>
+      <div class="form-row" id="svcCampoGlobalRow" style="display:none; margin-top:14px; margin-bottom:0;">
+        <label>Campo global (opcional)</label>
+        <input type="text" id="svcCampoGlobalNombre" placeholder="Ej. Administrador de la cuenta" />
+        <div class="hint">Aplica a todo el servicio (no por grupo). El valor se edita después desde la tabla del dashboard.</div>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Campos personalizados</div>
+      <div class="hint" style="margin-top:-4px; margin-bottom:10px;">Aparecerán al asignar este servicio a un usuario (ej. Correo, PIN, Perfil).</div>
+      <div id="camposContainer"></div>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <input type="text" id="nuevoCampoNombre" style="flex:1;" />
+        <button class="btn btn-outline btn-sm" id="btnAgregarCampo">Agregar</button>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-outline" id="cancelServicio">Cancelar</button>
+      <button class="btn btn-primary" id="confirmServicio">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL USUARIO -->
+<div class="modal-overlay" id="modalUsuario">
+  <div class="modal-content">
+    <h3 id="tituloModalUsuario">Nuevo usuario</h3>
+    <div class="form-row">
+      <label>Nombre</label>
+      <input type="text" id="usrNombre" />
+    </div>
+    <div class="form-grid2">
+      <div class="form-row">
+        <label>Teléfono</label>
+        <input type="tel" id="usrTelefono" />
+      </div>
+      <div class="form-row">
+        <label>Día de pago (1-31)</label>
+        <input type="number" id="usrDiaPago" min="1" max="31" />
+      </div>
+    </div>
+
+    <div class="form-row">
+      <label>Servicios asociados</label>
+      <div id="usrServiciosAsignados"></div>
+      <select id="selectAgregarServicio" style="margin-top:8px;">
+        <option value="">+ Agregar servicio...</option>
+      </select>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-outline" id="cancelUsuario">Cancelar</button>
+      <button class="btn btn-primary" id="confirmUsuario">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ASIGNACIÓN DE SERVICIO A USUARIO (incluye selector de grupo interno) -->
+<div class="modal-overlay" id="modalAsignacion">
+  <div class="modal-content">
+    <h3 id="tituloModalAsignacion">Datos de acceso del servicio</h3>
+
+    <div class="modal-section" style="border-top:none;margin-top:0;padding-top:0;">
+      <div class="form-row">
+        <label>Grupo (cuenta)</label>
+        <select id="asigGrupoInterno"></select>
+        <div class="hint" id="asigGrupoHint">Selecciona a qué grupo de cuentas pertenece este usuario dentro del servicio.</div>
+      </div>
+      <div class="form-row" style="margin-bottom:0;">
+        <label>Precio mensual acordado</label>
+        <input type="number" id="asigPrecio" min="0" step="0.01" />
+        <div class="hint">Por defecto toma el precio del servicio, puedes ajustarlo (descuento).</div>
+      </div>
+    </div>
+
+    <div class="modal-section" id="asigCamposSection">
+      <div class="modal-section-title">Campos personalizados</div>
+      <div id="asigCamposPersonalizados"></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-outline" id="cancelAsignacion">Cancelar</button>
+      <button class="btn btn-primary" id="confirmAsignacion">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
